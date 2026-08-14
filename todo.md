@@ -22,3 +22,10 @@
 - [x] Confirm that image-inspector application code makes no file-analysis request: the local inspector uses File, ArrayBuffer, object URLs, and browser image decoding only. General page-visit measurement is disclosed separately and does not receive file bytes, names, metadata, previews, or CSV values.
 - [x] Verify navigation from image inspection to CSV preflight and back, using the app’s internal routes.
 - [x] Add `/image-inspector` to the static XML sitemap.
+
+## Local EXIF removal
+
+- [x] Define the supported output behavior and limitations for EXIF removal without sending image data to a server.
+- [x] Implement a local clean-copy action that preserves the original file and provides an explicit browser download.
+- [x] Verify that a JPEG containing EXIF downloads as a new image with no readable EXIF or location metadata.
+- [x] Verify non-EXIF images, decoding failures, download failures, mobile controls, and privacy copy.

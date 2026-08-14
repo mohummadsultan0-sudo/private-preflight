@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only image metadata parser. */
 import { describe, expect, it } from "vitest";
-import { extractExif, parseTiffExif, supportedImageType } from "./image";
+import { canCreateCleanCopy, cleanCopyFileName, extractExif, parseTiffExif, supportedImageType } from "./image";
 
 function withExifTiff(): Uint8Array {
   const bytes = new Uint8Array(50);
@@ -28,5 +28,13 @@ describe("local image metadata", () => {
     const result = extractExif(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), "jpeg");
     expect(result.state).toBe("none");
     expect(result.exif.hasLocationMetadata).toBe(false);
+  });
+
+  it("only offers a clean copy when a non-GIF image has metadata to remove", () => {
+    expect(canCreateCleanCopy("jpeg", "available")).toBe(true);
+    expect(canCreateCleanCopy("webp", "unreadable")).toBe(true);
+    expect(canCreateCleanCopy("png", "none")).toBe(false);
+    expect(canCreateCleanCopy("gif", "available")).toBe(false);
+    expect(cleanCopyFileName("holiday.photo.JPG")).toBe("holiday.photo-clean.png");
   });
 });

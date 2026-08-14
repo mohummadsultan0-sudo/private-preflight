@@ -37,6 +37,16 @@ export class ImageInspectionError extends Error {
   }
 }
 
+export class ImageCleanError extends Error {
+  constructor(
+    public readonly code: "not_cleanable" | "clean_failed",
+    message: string,
+  ) {
+    super(message);
+    this.name = "ImageCleanError";
+  }
+}
+
 const MIME_TO_TYPE: Record<string, SupportedImageType> = {
   "image/jpeg": "jpeg",
   "image/jpg": "jpeg",
@@ -194,6 +204,18 @@ export function supportedImageType(file: Pick<File, "name" | "type">): Supported
   return EXTENSION_TO_TYPE[extension] ?? null;
 }
 
+export function canCreateCleanCopy(format: SupportedImageType, metadataState: ImageMetadataState): boolean {
+  return format !== "gif" && metadataState !== "none";
+}
+
+function validateImageFile(file: File): SupportedImageType {
+  const type = supportedImageType(file);
+  if (!type) throw new ImageInspectionError("unsupported_type", "Choose a JPEG, PNG, WebP, or GIF image for local inspection.");
+  if (file.size === 0) throw new ImageInspectionError("empty_file", "This image file is empty. Choose a non-empty image.");
+  if (file.size > MAX_IMAGE_BYTES) throw new ImageInspectionError("file_too_large", `This release inspects images up to ${MAX_IMAGE_BYTES / 1024 / 1024} MB locally. Choose a smaller image.`);
+  return type;
+}
+
 function readableMimeType(file: File, type: SupportedImageType): string {
   if (file.type) return file.type;
   return type === "jpeg" ? "image/jpeg" : `image/${type}`;
@@ -232,11 +254,87 @@ function aspectRatio(width: number, height: number): string {
   return `${width / divisor}:${height / divisor}`;
 }
 
+type CanvasSource = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  release: () => void;
+};
+
+async function decodeForCanvas(file: File): Promise<CanvasSource> {
+  if ("createImageBitmap" in window) {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+      return { source: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close() };
+    } catch {
+      // Fall back to an Image element for browsers without a compatible bitmap decoder.
+    }
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => resolve({ source: image, width: image.naturalWidth, height: image.naturalHeight, release: () => URL.revokeObjectURL(url) });
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new ImageCleanError("clean_failed", "The browser could not create a clean copy from this image."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new ImageCleanError("clean_failed", "The browser could not encode the clean PNG copy."));
+    }, "image/png");
+  });
+}
+
+/** Re-encodes visible local pixels as PNG; source EXIF and source-file metadata are not carried into the new blob. */
+export async function createExifFreePng(file: File): Promise<Blob> {
+  const type = validateImageFile(file);
+  if (type === "gif") throw new ImageCleanError("not_cleanable", "GIF clean copies are not available because this release does not re-encode animated images.");
+  let decoded: CanvasSource | null = null;
+  try {
+    decoded = await decodeForCanvas(file);
+    if (!decoded.width || !decoded.height) throw new ImageCleanError("clean_failed", "The browser could not read pixels for the clean copy.");
+    const canvas = document.createElement("canvas");
+    canvas.width = decoded.width;
+    canvas.height = decoded.height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new ImageCleanError("clean_failed", "The browser could not prepare a local clean-copy canvas.");
+    context.drawImage(decoded.source, 0, 0, decoded.width, decoded.height);
+    return await canvasToPng(canvas);
+  } catch (caught) {
+    if (caught instanceof ImageCleanError || caught instanceof ImageInspectionError) throw caught;
+    throw new ImageCleanError("clean_failed", "The browser could not create a clean PNG locally. Your original image was not changed.");
+  } finally {
+    decoded?.release();
+  }
+}
+
+export function cleanCopyFileName(fileName: string): string {
+  const baseName = fileName.replace(/\.[^.]+$/, "") || "image";
+  return `${baseName}-clean.png`;
+}
+
+export function downloadLocalBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
 export async function inspectImageFile(file: File): Promise<ImageInspection> {
-  const type = supportedImageType(file);
-  if (!type) throw new ImageInspectionError("unsupported_type", "Choose a JPEG, PNG, WebP, or GIF image for local inspection.");
-  if (file.size === 0) throw new ImageInspectionError("empty_file", "This image file is empty. Choose a non-empty image.");
-  if (file.size > MAX_IMAGE_BYTES) throw new ImageInspectionError("file_too_large", `This release inspects images up to ${MAX_IMAGE_BYTES / 1024 / 1024} MB locally. Choose a smaller image.`);
+  const type = validateImageFile(file);
   try {
     const [buffer, dimensions] = await Promise.all([file.arrayBuffer(), readDimensions(file)]);
     const metadata = extractExif(new Uint8Array(buffer), type);

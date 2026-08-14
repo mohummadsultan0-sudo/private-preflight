@@ -54,6 +54,26 @@ At 390 × 844, the image workspace keeps the seal, four concise horizontal audit
 
 After the visual revision, a valid 70 B PNG again completed through the real drop flow. The result surface reported 1 × 1 pixels, 1:1 frame, no EXIF, and no location signal while the audit trail advanced to `Review` and retained the no-data-left-this-tab boundary.
 
+## Local EXIF removal contract
+
+When a JPEG, PNG, or WebP contains readable EXIF metadata, the result surface may offer **Download clean PNG**. The browser decodes the selected local image, redraws its visible pixels on an in-memory canvas, and downloads a newly encoded PNG. The source file is never changed, uploaded, stored, or sent. The clean copy intentionally drops EXIF and other source-file metadata; it also normalizes the visible orientation.
+
+The action is unavailable for GIF files because retaining an animated GIF requires a different, frame-aware encoder. It is also unavailable when no readable EXIF exists, because there is no EXIF block for this release to remove. A conversion failure shows a dedicated recovery message and does not alter the original image. The existing 15 MB input cap remains in force to bound local memory use.
+
+An end-to-end browser test now uses a synthetic but decodable JPEG carrying orientation, make, model, capture-time, and location EXIF signals. It is dispatched through the normal image drop surface; the next visual assertion confirms that the clean-copy control appears.
+
+The JPEG result displayed the expected camera, time, orientation, and location signals along with `Download clean PNG`. Activating the button produced the local-only success message while retaining the original JPEG result unchanged. The next verification inspects the downloaded PNG for the absence of readable EXIF.
+
+The downloaded file was a 1 × 2 RGBA PNG. The application’s own EXIF parser reported `metadataState: none` and `hasLocationMetadata: false` for it. A separate no-EXIF PNG test is in progress to confirm that the clean-copy action stays hidden when no EXIF is available to remove.
+
+The no-EXIF PNG completed with its normal metadata-none presentation and no clean-copy control. The 390 px image workspace remains vertically readable, with the audit trail, selection action, evidence panel, and footer fitting without horizontal overflow.
+
+For the clean-copy failure path, a valid EXIF-bearing JPEG is loaded through the normal drop surface while the canvas PNG encoder is temporarily made unavailable. The next interaction invokes the visible clean-copy action and checks that the original inspection remains visible with a recovery message.
+
+The simulated encoder failure showed `The browser could not encode the clean PNG copy.` inside the clean-copy panel. The original JPEG findings and download action remained available, and no source image mutation occurred.
+
+The release check passed 10 deterministic tests (CSV and image logic), TypeScript validation, and the production build. The Image Inspector’s final workbench now places the active Add / Inspect / Review / Decide flow ahead of the editorial framing while preserving the `Private Preflight` suite hierarchy. The clean-copy card is shown only when a non-GIF image has EXIF to remove; GIF files remain inspection-only in this release.
+
 An empty, declared-JPEG file was dispatched next through the same drop surface. The following visual check verifies the dedicated empty-file recovery state.
 
 The empty-file check rendered its own recovery message, instructing the user to choose a non-empty image and retaining the no-upload, no-storage, and no-send assurance.
