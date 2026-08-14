@@ -1,10 +1,11 @@
 /** Audit Ledger style: a bounded local batch queue makes every image, evidence field, output choice, and recovery state traceable before a bundle is created. */
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import JSZip from "jszip";
-import { AlertTriangle, Check, FileArchive, FileSpreadsheet, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, FileArchive, FileSpreadsheet, GripVertical, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateCleanCopy, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, supportedImageType } from "@/lib/image";
 import { createCombinedBatchCsv, createMetadataCsv, createMetadataJson, DEFAULT_CSV_FIELDS, ReportOptions, SAFE_CSV_FIELDS, SafeCsvField } from "@/lib/metadataReport";
+import { moveQueueItem, moveQueueItemBefore } from "@/lib/batchQueue";
 
 const MAX_BATCH_FILES = 8;
 const MAX_BATCH_BYTES = 40 * 1024 * 1024;
@@ -40,6 +41,9 @@ export function BatchImageProcessor() {
   const [archiveStage, setArchiveStage] = useState<"idle" | "cleaning" | "finalizing" | "complete" | "error">("idle");
   const [bundleProgress, setBundleProgress] = useState<BundleProgress | null>(null);
   const [selectedCombinedFields, setSelectedCombinedFields] = useState<SafeCsvField[]>(DEFAULT_CSV_FIELDS);
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [queueNotice, setQueueNotice] = useState<string | null>(null);
   const [bundleNote, setBundleNote] = useState<string | null>(null);
   const [bundleError, setBundleError] = useState<string | null>(null);
 
@@ -77,6 +81,7 @@ export function BatchImageProcessor() {
   const combinedEntries: BatchReportEntry[] = eligible.map((item, index) => ({ itemId: safeItemId(index), inspection: item.inspection!, options: reportOptionsFor(item) }));
   const completedCount = eligible.filter((item) => item.bundleStage === "complete").length;
   const progressValue = archiveStage === "complete" ? 100 : archiveStage === "finalizing" ? 95 : eligible.length ? Math.round((completedCount / eligible.length) * 85) : 0;
+  const orderingLocked = isBundling || items.some((item) => item.status === "reading");
 
   const reset = () => {
     setItems([]);
@@ -85,6 +90,9 @@ export function BatchImageProcessor() {
     setArchiveStage("idle");
     setBundleProgress(null);
     setSelectedCombinedFields(DEFAULT_CSV_FIELDS);
+    setDraggedItemId(null);
+    setDropTargetId(null);
+    setQueueNotice(null);
     if (inputRef.current) inputRef.current.value = "";
   };
   const setOutputFormat = (id: string, outputFormat: CleanCopyFormat) => setItems((current) => current.map((item) => item.id === id ? { ...item, outputFormat } : item));
@@ -95,6 +103,58 @@ export function BatchImageProcessor() {
     setBundleNote(null);
     setBundleError(null);
     if (inputRef.current) inputRef.current.value = "";
+  };
+  const moveItem = (id: string, nextIndex: number) => {
+    if (orderingLocked) return;
+    const boundedIndex = Math.max(0, Math.min(items.length - 1, nextIndex));
+    if (!items.some((item) => item.id === id)) return;
+    setItems((current) => moveQueueItem(current, id, boundedIndex));
+    setQueueNotice(`Queue order updated: item moved to position ${boundedIndex + 1} of ${items.length}.`);
+  };
+  const moveItemBefore = (sourceId: string, targetId: string) => {
+    const sourceIndex = items.findIndex((item) => item.id === sourceId);
+    const targetIndex = items.findIndex((item) => item.id === targetId);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+    const nextIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    setItems((current) => moveQueueItemBefore(current, sourceId, targetId));
+    setQueueNotice(`Queue order updated: item moved to position ${nextIndex + 1} of ${items.length}.`);
+  };
+  const startDrag = (event: ReactDragEvent<HTMLButtonElement>, id: string) => {
+    if (orderingLocked) { event.preventDefault(); return; }
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", id);
+    setDraggedItemId(id);
+    setQueueNotice("Dragging queue item. Drop before another row to change the local processing order.");
+  };
+  const startTouchDrag = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if (event.pointerType === "mouse" || orderingLocked) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setDraggedItemId(id);
+    setQueueNotice("Dragging queue item. Release over another row to change the local processing order.");
+  };
+  const moveTouchDrag = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if (event.pointerType === "mouse" || draggedItemId !== id || orderingLocked) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>("[data-queue-item-id]");
+    const targetId = target?.dataset.queueItemId;
+    if (targetId && targetId !== id) setDropTargetId(targetId);
+  };
+  const finishTouchDrag = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if (event.pointerType === "mouse") return;
+    if (!orderingLocked && dropTargetId) moveItemBefore(id, dropTargetId);
+    setDraggedItemId(null);
+    setDropTargetId(null);
+  };
+  const dropOnItem = (event: ReactDragEvent<HTMLLIElement>, targetId: string) => {
+    event.preventDefault();
+    if (!orderingLocked) moveItemBefore(event.dataTransfer.getData("text/plain") || draggedItemId || "", targetId);
+    setDraggedItemId(null);
+    setDropTargetId(null);
+  };
+  const handleReorderKey = (event: ReactKeyboardEvent<HTMLButtonElement>, id: string) => {
+    if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+    event.preventDefault();
+    const currentIndex = items.findIndex((item) => item.id === id);
+    moveItem(id, currentIndex + (event.key === "ArrowUp" ? -1 : 1));
   };
   const toggleCombinedField = (field: SafeCsvField) => setSelectedCombinedFields((current) => current.includes(field) ? current.length === 1 ? current : current.filter((value) => value !== field) : [...current, field]);
   const downloadCombinedCsv = () => {
@@ -182,8 +242,11 @@ export function BatchImageProcessor() {
             const format = item.outputFormat ?? "jpeg";
             const jpegQuality = item.jpegQuality ?? DEFAULT_JPEG_QUALITY;
             const progressText = item.bundleStage === "cleaning" ? "Cleaning pixels locally" : item.bundleStage === "reports" ? "Writing privacy-safe reports" : item.bundleStage === "complete" ? "Included in ZIP" : item.bundleStage === "failed" ? item.bundleError : undefined;
-            return <li key={item.id}>
+            const itemIsDragging = draggedItemId === item.id;
+            const itemIsDropTarget = dropTargetId === item.id && draggedItemId !== item.id;
+            return <li key={item.id} data-queue-item-id={item.id} className={`${itemIsDragging ? "is-dragging" : ""} ${itemIsDropTarget ? "is-drop-target" : ""}`} onDragOver={(event) => { if (!orderingLocked && draggedItemId !== item.id) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTargetId(item.id); } }} onDragLeave={() => { if (dropTargetId === item.id) setDropTargetId(null); }} onDrop={(event) => dropOnItem(event, item.id)}>
               <span>{String(index + 1).padStart(2, "0")}</span>
+              <button type="button" className="batch-drag-handle" draggable={!orderingLocked} disabled={orderingLocked} onDragStart={(event) => startDrag(event, item.id)} onDragEnd={() => { setDraggedItemId(null); setDropTargetId(null); }} onPointerDown={(event) => startTouchDrag(event, item.id)} onPointerMove={(event) => moveTouchDrag(event, item.id)} onPointerUp={(event) => finishTouchDrag(event, item.id)} onPointerCancel={() => { setDraggedItemId(null); setDropTargetId(null); }} onKeyDown={(event) => handleReorderKey(event, item.id)} aria-label={`Reorder item ${index + 1}. Drag to move, or use Alt plus up or down arrow.`} title="Drag to reorder · Alt + ↑/↓ moves by one row"><GripVertical aria-hidden="true" /></button>
               <div className="batch-item-main">
                 <strong title={item.file.name}>{item.file.name}</strong>
                 <small>{formatBytes(item.file.size)} · {progressText ?? (item.status === "reading" ? "Reading locally" : item.status === "ready" ? canClean ? "Ready for a clean copy" : "Inspection complete — no readable metadata to remove" : item.error)}</small>
@@ -202,6 +265,7 @@ export function BatchImageProcessor() {
             </li>;
           })}
         </ul>
+        <p className="batch-order-note" aria-live="polite"><GripVertical aria-hidden="true" /> {queueNotice ?? (orderingLocked ? "Queue order is locked while a file is reading or a ZIP is being created." : "Drag the handle to reorder. Alt + ↑ or ↓ moves one row.")}</p>
         <details className="batch-csv-field-picker">
           <summary>REVIEW / 03 · Choose combined CSV fields · {selectedCombinedFields.length} selected</summary>
           <p>These safe signals apply to the standalone combined CSV and the copy inside the local ZIP. Names, pixels, and raw metadata stay excluded.</p>

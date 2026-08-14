@@ -91,3 +91,9 @@
 - [x] Implement an accessible remove action for each queue item before bundle creation, with queue limits and eligibility recalculated locally.
 - [x] Implement an independent 40–95 JPEG quality control per eligible batch item, ignored for PNG output and applied to all matching reports and clean copies.
 - [x] Verify field-filtering and per-item quality report contracts, removal-state safeguards, responsive styles, 15 deterministic tests, TypeScript, and production build.
+
+## Batch queue drag-and-drop ordering
+
+- [x] Define local-only drag-and-drop ordering, pointer/keyboard access behavior, and ordering lock during ZIP creation.
+- [x] Implement drag handles and drop targets that reorder queue items before conversion without altering files or per-item output choices.
+- [x] Verify deterministic ordering logic, reordered ordinal-ID contract, keyboard alternative, mobile layout, 17 tests, TypeScript, and production build.

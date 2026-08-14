@@ -91,8 +91,9 @@ export function ImageInspector() {
         <AuditTrail mode="image" phase={inspection ? "ready" : stage === "reading" ? "reading" : stage === "error" ? "error" : "idle"} />
         <div className="inspection-frame__content">
           {!inspection && stage !== "complete" && (
-            <div className="image-drop-layout">
+              <div className="image-drop-layout">
               <div className={`image-dropzone ${isDragging ? "image-dropzone--dragging" : ""} ${stage === "reading" ? "image-dropzone--busy" : ""}`} onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(event) => { event.preventDefault(); setIsDragging(false); void inspect(event.dataTransfer.files?.[0]); }}>
+                <div className="image-dropzone__ledger-marks" aria-hidden="true"><i /><i /><i /></div>
                 <span className="image-dropzone__index">ADD / 01 — IMAGE FILE</span>
                 {stage === "reading" ? <div className="image-processing" aria-live="polite"><ScanLine aria-hidden="true" /><strong>Reading locally</strong><p>Checking image dimensions and available metadata. Nothing is uploaded.</p></div> : <><div className="image-dropzone__icon"><ImageIcon aria-hidden="true" /></div><h2>Drop an image here</h2><p>or choose a local <code>.jpg</code>, <code>.png</code>, <code>.webp</code>, or <code>.gif</code></p><Button className="action-button" onClick={() => inputRef.current?.click()}><Upload aria-hidden="true" /> Choose image</Button><input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" onChange={(event) => void inspect(event.target.files?.[0])} className="sr-only" aria-label="Choose an image for local inspection" /></>}
                 <div className="image-dropzone__foot"><LockKeyhole aria-hidden="true" /><span>Hard limit: {MAX_IMAGE_BYTES / 1024 / 1024} MB for predictable local inspection.</span></div>

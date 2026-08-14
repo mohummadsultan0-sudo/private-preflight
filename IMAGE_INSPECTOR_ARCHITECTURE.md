@@ -176,6 +176,14 @@ Every queue row has an accessible remove action until bundle creation begins. Re
 
 Each eligible JPEG selection has an independent quality range of **40–95**, defaulting to **90**. The quality is used for that item's clean JPEG encoding and its JSON, individual CSV, and combined CSV evidence rows. Switching an item to PNG hides and disables its JPEG-quality control; PNG remains lossless for visible pixels and its report records no JPEG quality. Quality choices are held only in component memory for the active queue and are not saved to browser preferences.
 
+## Local queue ordering
+
+Before ZIP creation, any batch row may be moved with its visible drag handle and dropped before another row. The move changes only the local array that represents the queue; it does not copy, upload, rename, modify, or delete any source file. A row retains its inspection result, selected output format, JPEG quality, and recovery state when moved.
+
+The active order determines the visible row numbers, the ordinal `image-01` identifiers assigned to eligible clean copies and combined CSV rows, and the sequence used during ZIP creation. Rejected rows remain visible and may be reordered, but never enter a clean-copy bundle. Dragging is disabled while files are still being read and throughout ZIP creation to keep progress totals and bundle IDs stable.
+
+The handle exposes keyboard reordering with **Alt + Arrow Up** and **Alt + Arrow Down** when the queue is idle. A concise live status names the new position after a keyboard or pointer move. The interface does not require a drag-only interaction: deletion, output choices, quality settings, and the existing file chooser remain independently reachable by keyboard and touch.
+
 A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
 
 The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.
