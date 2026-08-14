@@ -53,3 +53,11 @@
 - [x] Persist JPEG quality and advanced cleanup preferences only in browser local storage, with a clear reset path.
 - [x] Detect and remove XMP metadata where supported, then show its state in the comparison and privacy summary.
 - [x] Verify visual preview refresh, preference restoration/reset, XMP-clean output, mobile controls, tests, and production build.
+
+## JSON report, JPEG mode, and magnified comparison
+
+- [x] Define JSON report fields, browser encoder limits for JPEG mode, and the local-only behavior of the magnifier.
+- [x] Implement download of a privacy-safe JSON report without source bytes, raw metadata values, or coordinates.
+- [x] Implement an explicit JPEG mode setting with accurate browser-capability explanation and persistence.
+- [x] Implement an accessible, local before/after magnifier for clean JPEG previews.
+- [x] Verify JSON content and download, JPEG mode messaging, magnifier interaction, saved settings, mobile controls, tests, and production build.

@@ -132,6 +132,24 @@ Direct activation of the reset action restored quality 90 and the storage record
 
 The structural check passed for the 366 B, 80 × 40 clean JPEG: the application parser reported no EXIF, ICC, comments, or XMP. The complete suite now passes 11 deterministic tests, TypeScript validation, and the production build. Empty-state screenshots at 1280 px and 390 px confirm the unchanged workbench remains balanced with no horizontal clipping; the active result’s preview controls are intentionally created only after local inspection.
 
+## Local JSON evidence report, JPEG scan mode, and magnifier
+
+The optional JSON download contains an event timestamp, non-sensitive file facts (format, MIME type, dimensions, byte-size category), metadata **presence states**, selected output quality, browser-encoder mode, output-size estimate, and the tool’s local-processing boundary. It intentionally excludes the source filename, image bytes, preview URLs, raw EXIF field values, XMP contents, camera make/model, capture time, coordinates, and any user identifier.
+
+The browser canvas encoder used by this static release exposes JPEG quality but does not expose a reliable Progressive/Baseline switch. The settings surface therefore shows **Baseline-compatible browser output** as the active local mode and identifies **Progressive JPEG** as unavailable in this browser-only build rather than claiming a setting that cannot be honored. This choice is saved with the existing local preferences; it carries no image data.
+
+The JPEG comparison offers a pointer- and keyboard-accessible magnifier that enlarges one preview at a time. It uses the locally generated object URLs already needed for preview and does not transmit, persist, or analyse pixels beyond browser decoding/encoding. The magnifier is a visual aid and does not certify perceptual equivalence.
+
+A local 120 × 80 JPEG with a minimal EXIF segment has been dispatched through the normal drop surface. Its active JPEG quality is 90, and the next visual check verifies the browser-mode disclosure, local magnifier, and JSON-report action.
+
+The completed view showed the baseline-compatible browser-output mode and its explicit Progressive limitation, plus the local original/clean previews and interactive 3× lens. The JSON report action completed with an on-screen confirmation. The next checks inspect the downloaded JSON for its privacy boundary and exercise the lens controls.
+
+The downloaded JSON contained only its documented schema, local-processing state, non-sensitive source facts, metadata presence signals, output selection, size category, and privacy exclusions. It did not include the source name, values, pixels, preview URLs, or coordinates. Switching the lens to the original preview updated the visible detail source; an actual keyboard event is still required to complete the arrow-key path assertion.
+
+After focusing the detail stage, a real ArrowRight event moved the lens from its centered position while keeping the original-detail preview active. This confirms the promised pointer/keyboard interaction path without changing the selected output settings or transmitting pixels.
+
+The final release verification confirms the local JSON report downloaded with the intended privacy-safe fields, the baseline-compatible mode disclosure was explicit, and the lens supported source switching and arrow-key movement. The full production test suite passes 11 deterministic tests, TypeScript validation, and the production build. Empty-state screenshots at 1280 px and 390 px show no horizontal clipping; active controls remain scoped to an inspected local image.
+
 An empty, declared-JPEG file was dispatched next through the same drop surface. The following visual check verifies the dedicated empty-file recovery state.
 
 The empty-file check rendered its own recovery message, instructing the user to choose a non-empty image and retaining the no-upload, no-storage, and no-send assurance.
