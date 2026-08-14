@@ -97,3 +97,11 @@
 - [x] Define local-only drag-and-drop ordering, pointer/keyboard access behavior, and ordering lock during ZIP creation.
 - [x] Implement drag handles and drop targets that reorder queue items before conversion without altering files or per-item output choices.
 - [x] Verify deterministic ordering logic, reordered ordinal-ID contract, keyboard alternative, mobile layout, 17 tests, TypeScript, and production build.
+
+## Batch move controls, session order, and ZIP numbering preview
+
+- [x] Define visible move controls, session-only order persistence boundaries, and privacy-safe ZIP ordinal preview behavior.
+- [x] Implement visible move-up and move-down buttons for every queue item, with disabled boundary and processing states.
+- [x] Implement session-scoped queue restoration that keeps local files and their queue settings only in the browser, never in a network, account, analytics event, or server store.
+- [x] Show each eligible item’s final `image-##` ZIP output ordinal before bundle creation and refresh it on any reorder or removal.
+- [x] Verify move-control and ZIP-plan contracts, session-vault recovery safeguards, mixed eligibility, mobile-safe styles, 18 deterministic tests, TypeScript, and production build.

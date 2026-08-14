@@ -1,11 +1,12 @@
 /** Audit Ledger style: a bounded local batch queue makes every image, evidence field, output choice, and recovery state traceable before a bundle is created. */
-import { useRef, useState, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import JSZip from "jszip";
-import { AlertTriangle, Check, FileArchive, FileSpreadsheet, GripVertical, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, FileArchive, FileSpreadsheet, GripVertical, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { canCreateCleanCopy, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, supportedImageType } from "@/lib/image";
 import { createCombinedBatchCsv, createMetadataCsv, createMetadataJson, DEFAULT_CSV_FIELDS, ReportOptions, SAFE_CSV_FIELDS, SafeCsvField } from "@/lib/metadataReport";
-import { moveQueueItem, moveQueueItemBefore } from "@/lib/batchQueue";
+import { createZipOutputPlan, moveQueueItem, moveQueueItemBefore } from "@/lib/batchQueue";
+import { clearSessionBatchQueue, restoreSessionBatchQueue, saveSessionBatchQueue, SessionBatchItem } from "@/lib/batchSessionVault";
 
 const MAX_BATCH_FILES = 8;
 const MAX_BATCH_BYTES = 40 * 1024 * 1024;
@@ -32,6 +33,10 @@ const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 102
 const safeItemId = (index: number) => `image-${String(index + 1).padStart(2, "0")}`;
 const isCleanEligible = (item: BatchItem) => item.status === "ready" && Boolean(item.inspection) && canCreateCleanCopy(item.inspection!.format, item.inspection!.metadataState);
 const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, estimatedBytes: null, cleanCopyOffered: true });
+const toSessionItem = (item: BatchItem): SessionBatchItem | null => {
+  if (item.status === "reading") return null;
+  return { ...item, status: item.status, bundleStage: item.status === "ready" ? "queued" : item.bundleStage === "failed" ? "failed" : undefined };
+};
 
 export function BatchImageProcessor() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,8 +49,30 @@ export function BatchImageProcessor() {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [queueNotice, setQueueNotice] = useState<string | null>(null);
+  const [isSessionRestoring, setIsSessionRestoring] = useState(true);
+  const [sessionNote, setSessionNote] = useState<string | null>(null);
   const [bundleNote, setBundleNote] = useState<string | null>(null);
   const [bundleError, setBundleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void restoreSessionBatchQueue().then((restored) => {
+      if (!active || !restored.length) return;
+      setItems(restored);
+      setOpen(true);
+      setSessionNote(`Restored ${restored.length} local queue item${restored.length === 1 ? "" : "s"} for this browser tab.`);
+    }).catch(() => {
+      if (active) setSessionNote("This browser could not restore the temporary local queue. You can continue in this page.");
+    }).finally(() => { if (active) setIsSessionRestoring(false); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (isSessionRestoring || isBundling) return;
+    const saved = items.map(toSessionItem).filter((item): item is SessionBatchItem => item !== null);
+    if (!saved.length) { void clearSessionBatchQueue().catch(() => undefined); return; }
+    void saveSessionBatchQueue(saved).catch(() => setSessionNote("Temporary queue saving is unavailable in this browser. The current queue remains local in this page."));
+  }, [isBundling, isSessionRestoring, items]);
 
   const addFiles = async (incoming: FileList | File[]) => {
     const files = Array.from(incoming);
@@ -79,9 +106,10 @@ export function BatchImageProcessor() {
 
   const eligible = items.filter(isCleanEligible);
   const combinedEntries: BatchReportEntry[] = eligible.map((item, index) => ({ itemId: safeItemId(index), inspection: item.inspection!, options: reportOptionsFor(item) }));
+  const zipOutputByItemId = createZipOutputPlan(items, isCleanEligible, (item) => (item.outputFormat ?? "jpeg") === "jpeg" ? "jpg" : "png");
   const completedCount = eligible.filter((item) => item.bundleStage === "complete").length;
   const progressValue = archiveStage === "complete" ? 100 : archiveStage === "finalizing" ? 95 : eligible.length ? Math.round((completedCount / eligible.length) * 85) : 0;
-  const orderingLocked = isBundling || items.some((item) => item.status === "reading");
+  const orderingLocked = isSessionRestoring || isBundling || items.some((item) => item.status === "reading");
 
   const reset = () => {
     setItems([]);
@@ -93,6 +121,8 @@ export function BatchImageProcessor() {
     setDraggedItemId(null);
     setDropTargetId(null);
     setQueueNotice(null);
+    setSessionNote(null);
+    void clearSessionBatchQueue().catch(() => undefined);
     if (inputRef.current) inputRef.current.value = "";
   };
   const setOutputFormat = (id: string, outputFormat: CleanCopyFormat) => setItems((current) => current.map((item) => item.id === id ? { ...item, outputFormat } : item));
@@ -226,14 +256,14 @@ export function BatchImageProcessor() {
         <h2 id="batch-title">Review several images before sharing.</h2>
         <p>Up to 8 images and 40 MB total. Review local facts, choose an output, then decide whether to create an evidence bundle.</p>
       </div>
-      <Button variant="outline" disabled={isBundling} onClick={() => setOpen((value) => !value)}><Images aria-hidden="true" /> {open ? "Close batch" : "Process a batch"}</Button>
+      <Button variant="outline" disabled={isBundling || isSessionRestoring} onClick={() => setOpen((value) => !value)}><Images aria-hidden="true" /> {open ? "Close batch" : "Process a batch"}</Button>
     </div>
     {open && <>
-      <div className="batch-processor__drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); if (!isBundling) void addFiles(event.dataTransfer.files); }}>
+      <div className="batch-processor__drop" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); if (!isBundling && !isSessionRestoring) void addFiles(event.dataTransfer.files); }}>
         <strong>Add up to {MAX_BATCH_FILES} local images</strong>
         <span>JPEG, PNG, WebP, or GIF · 15 MB each · 40 MB combined</span>
-        <Button className="action-button" disabled={isBundling} onClick={() => inputRef.current?.click()}><Plus aria-hidden="true" /> Choose images</Button>
-        <input ref={inputRef} className="sr-only" type="file" multiple disabled={isBundling} accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" onChange={(event) => void addFiles(event.target.files ?? [])} aria-label="Choose images for local batch processing" />
+        <Button className="action-button" disabled={isBundling || isSessionRestoring} onClick={() => inputRef.current?.click()}><Plus aria-hidden="true" /> Choose images</Button>
+        <input ref={inputRef} className="sr-only" type="file" multiple disabled={isBundling || isSessionRestoring} accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" onChange={(event) => void addFiles(event.target.files ?? [])} aria-label="Choose images for local batch processing" />
       </div>
       {items.length > 0 && <>
         <ul className="batch-processor__list" aria-label="Local batch queue">
@@ -241,15 +271,21 @@ export function BatchImageProcessor() {
             const canClean = isCleanEligible(item);
             const format = item.outputFormat ?? "jpeg";
             const jpegQuality = item.jpegQuality ?? DEFAULT_JPEG_QUALITY;
+            const zipOutputName = zipOutputByItemId.get(item.id);
             const progressText = item.bundleStage === "cleaning" ? "Cleaning pixels locally" : item.bundleStage === "reports" ? "Writing privacy-safe reports" : item.bundleStage === "complete" ? "Included in ZIP" : item.bundleStage === "failed" ? item.bundleError : undefined;
             const itemIsDragging = draggedItemId === item.id;
             const itemIsDropTarget = dropTargetId === item.id && draggedItemId !== item.id;
             return <li key={item.id} data-queue-item-id={item.id} className={`${itemIsDragging ? "is-dragging" : ""} ${itemIsDropTarget ? "is-drop-target" : ""}`} onDragOver={(event) => { if (!orderingLocked && draggedItemId !== item.id) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setDropTargetId(item.id); } }} onDragLeave={() => { if (dropTargetId === item.id) setDropTargetId(null); }} onDrop={(event) => dropOnItem(event, item.id)}>
               <span>{String(index + 1).padStart(2, "0")}</span>
               <button type="button" className="batch-drag-handle" draggable={!orderingLocked} disabled={orderingLocked} onDragStart={(event) => startDrag(event, item.id)} onDragEnd={() => { setDraggedItemId(null); setDropTargetId(null); }} onPointerDown={(event) => startTouchDrag(event, item.id)} onPointerMove={(event) => moveTouchDrag(event, item.id)} onPointerUp={(event) => finishTouchDrag(event, item.id)} onPointerCancel={() => { setDraggedItemId(null); setDropTargetId(null); }} onKeyDown={(event) => handleReorderKey(event, item.id)} aria-label={`Reorder item ${index + 1}. Drag to move, or use Alt plus up or down arrow.`} title="Drag to reorder · Alt + ↑/↓ moves by one row"><GripVertical aria-hidden="true" /></button>
+              <div className="batch-move-buttons" aria-label={`Move item ${index + 1}`}>
+                <button type="button" disabled={orderingLocked || index === 0} onClick={() => moveItem(item.id, index - 1)} aria-label={`Move item ${index + 1} up`} title="Move up"><ChevronUp aria-hidden="true" /></button>
+                <button type="button" disabled={orderingLocked || index === items.length - 1} onClick={() => moveItem(item.id, index + 1)} aria-label={`Move item ${index + 1} down`} title="Move down"><ChevronDown aria-hidden="true" /></button>
+              </div>
               <div className="batch-item-main">
                 <strong title={item.file.name}>{item.file.name}</strong>
                 <small>{formatBytes(item.file.size)} · {progressText ?? (item.status === "reading" ? "Reading locally" : item.status === "ready" ? canClean ? "Ready for a clean copy" : "Inspection complete — no readable metadata to remove" : item.error)}</small>
+                <span className={`batch-zip-preview ${zipOutputName ? "" : "is-unavailable"}`}><b>ZIP /</b> {zipOutputName ?? (item.status === "reading" ? "Awaiting local inspection" : "No clean ZIP output")}</span>
                 {canClean && <>
                   <div className="batch-format-picker" role="group" aria-label={`Clean output format for item ${index + 1}`}>
                     <button type="button" disabled={isBundling} className={format === "jpeg" ? "is-active" : ""} onClick={() => setOutputFormat(item.id, "jpeg")}>JPEG</button>
@@ -266,6 +302,7 @@ export function BatchImageProcessor() {
           })}
         </ul>
         <p className="batch-order-note" aria-live="polite"><GripVertical aria-hidden="true" /> {queueNotice ?? (orderingLocked ? "Queue order is locked while a file is reading or a ZIP is being created." : "Drag the handle to reorder. Alt + ↑ or ↓ moves one row.")}</p>
+        {sessionNote && <p className="batch-session-note" role="status">{sessionNote}</p>}
         <details className="batch-csv-field-picker">
           <summary>REVIEW / 03 · Choose combined CSV fields · {selectedCombinedFields.length} selected</summary>
           <p>These safe signals apply to the standalone combined CSV and the copy inside the local ZIP. Names, pixels, and raw metadata stay excluded.</p>

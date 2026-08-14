@@ -17,3 +17,12 @@ export function moveQueueItemBefore<T extends QueueEntry>(items: readonly T[], s
   if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return [...items];
   return moveQueueItem(items, sourceId, sourceIndex < targetIndex ? targetIndex - 1 : targetIndex);
 }
+
+export function createZipOutputPlan<T extends QueueEntry>(items: readonly T[], isEligible: (item: T) => boolean, extensionFor: (item: T) => "jpg" | "png") {
+  const outputPlan = new Map<string, string>();
+  items.filter(isEligible).forEach((item, index) => {
+    const ordinal = `image-${String(index + 1).padStart(2, "0")}`;
+    outputPlan.set(item.id, `${ordinal}-clean.${extensionFor(item)}`);
+  });
+  return outputPlan;
+}

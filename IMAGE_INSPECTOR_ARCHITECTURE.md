@@ -184,6 +184,14 @@ The active order determines the visible row numbers, the ordinal `image-01` iden
 
 The handle exposes keyboard reordering with **Alt + Arrow Up** and **Alt + Arrow Down** when the queue is idle. A concise live status names the new position after a keyboard or pointer move. The interface does not require a drag-only interaction: deletion, output choices, quality settings, and the existing file chooser remain independently reachable by keyboard and touch.
 
+## Session queue restoration and ZIP output preview
+
+The batch workspace adds visible **Move up** and **Move down** controls to every row. The first item cannot move up and the final item cannot move down; all move controls are disabled while an image is being read or a ZIP is being created. They call the same local reorder operation as drag-and-drop, preserving all per-item settings.
+
+To honour a browser refresh without introducing a server data path, the active queue is cached only in the browser’s local **session vault**: a tab-scoped session identifier in `sessionStorage` points to an IndexedDB record containing the selected local files and their queue state. The cache is available again after a refresh in the same tab, cannot be restored by a different browser session, and is never uploaded or read by an API. The **Clear queue** action deletes the current tab’s local vault record. If local browser storage is unavailable or full, the queue remains usable in the current page and the UI gives a recovery message instead of claiming persistence.
+
+Before any bundle is created, each eligible row displays its deterministic clean-output name, such as `image-01-clean.jpg` or `image-02-clean.png`. These ordinals are recalculated on every reorder, removal, or eligibility change and match the names written to `clean/` in the final ZIP. Ineligible rows are explicitly marked **No clean ZIP output** and receive no ordinal. Source file names never appear in ZIP paths or combined-report IDs.
+
 A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
 
 The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.
