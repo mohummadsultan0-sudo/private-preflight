@@ -75,3 +75,11 @@
 - [x] Implement selectable CSV metadata fields and a local filtered CSV download.
 - [x] Implement local ZIP bundles containing clean copies and JSON/CSV reports for eligible batch items.
 - [x] Verify valid and rejected batch items, selected CSV fields, ZIP contents, metadata removal, mobile controls, tests, and production build.
+
+## Per-item outputs, ZIP progress, and combined batch CSV
+
+- [x] Define per-item JPEG/PNG eligibility, progress stages, and privacy-safe combined CSV columns.
+- [x] Implement independent JPEG or PNG selection for every eligible batch item.
+- [x] Implement accessible per-file ZIP progress states during clean-copy creation and archive finalization.
+- [x] Implement a combined, privacy-safe batch CSV report download.
+- [x] Verify mixed output contracts, progress completion and recovery paths, combined CSV rows, mobile controls, 14 deterministic tests, TypeScript, and production build.

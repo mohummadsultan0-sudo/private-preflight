@@ -160,6 +160,14 @@ The chooser was reduced to `format`, `mime type`, and `exif`; the visible summar
 
 The filtered download contained the header plus only the `format`, `mime_type`, and `exif` rows—no unselected rows and no source name or raw values. The batch entry point was rendered at 1280 px and 390 px: desktop retains the workbench and a concise batch card, while phone collapses the batch call-to-action to a readable full-width control without horizontal clipping. The complete suite passes 13 deterministic tests, TypeScript validation, and the production build.
 
+## Per-item batch formats, progress, and combined CSV
+
+Every eligible batch item defaults to **JPEG** and may be switched independently to **PNG** before ZIP creation. The choice applies only to that item: JPEG produces a white-backed, quality-90 clean JPEG; PNG produces a transparent-capable lossless clean PNG. GIF and entries without readable metadata remain ineligible for clean-copy conversion and have no format selector.
+
+ZIP creation reports a local `Preparing`, `Cleaning`, `Writing reports`, or `Complete` status for each eligible item, along with a bounded percentage calculated from completed image/report work and archive finalization. A failed item records its recovery explanation, while the remaining items continue. The whole ZIP is withheld if no clean outputs are produced.
+
+The optional combined CSV is one UTF-8-with-BOM spreadsheet file with an `item_id` column and the same safe fields used by individual reports. Its item IDs are ordinal identifiers, not source file names. It excludes original names, raw bytes, preview URLs, raw EXIF/XMP values, camera values, capture time, coordinates, and user identifiers.
+
 A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
 
 The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMetadataCsv, createMetadataJson } from "./metadataReport";
+import { createCombinedBatchCsv, createMetadataCsv, createMetadataJson } from "./metadataReport";
 import { ImageInspection } from "./image";
 
 const inspection: ImageInspection = {
@@ -23,5 +23,22 @@ describe("local metadata reports", () => {
     expect(report).not.toContain("should-not-export");
     expect(report).not.toContain("Canon");
     expect(report).not.toContain("2026:08:14");
+  });
+
+  it("creates a field-filtered combined CSV with ordinal IDs and no private source values", () => {
+    const csv = createCombinedBatchCsv([
+      { itemId: "image-01", inspection, options },
+      { itemId: "image-02", inspection: { ...inspection, format: "png", mimeType: "image/png" }, options: { ...options, cleanFormat: "png" } },
+    ], ["format", "selected_format"]);
+    expect(csv.split("\r\n")).toEqual([
+      "item_id,section,field,value,clean_copy_effect",
+      "image-01,source,format,jpeg,not-applicable",
+      "image-01,clean_copy,selected_format,jpeg,not-applicable",
+      "image-02,source,format,png,not-applicable",
+      "image-02,clean_copy,selected_format,png,not-applicable",
+    ]);
+    expect(csv).not.toContain("should-not-export");
+    expect(csv).not.toContain("Canon");
+    expect(csv).not.toContain("2026:08:14");
   });
 });

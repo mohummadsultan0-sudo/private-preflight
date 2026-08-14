@@ -31,3 +31,9 @@ export function createMetadataCsv(inspection: ImageInspection, options: ReportOp
 export function createMetadataJson(inspection: ImageInspection, options: ReportOptions) {
   return JSON.stringify({ schemaVersion: "1.0", processing: { location: "local browser tab", uploaded: false, originalModified: false }, source: { format: inspection.format, mimeType: inspection.mimeType, dimensions: { width: inspection.width, height: inspection.height }, megapixels: inspection.megapixels, fileSizeCategory: sizeCategory(inspection.fileSize) }, metadataSignals: { exif: inspection.metadataState === "available" ? "available" : inspection.metadataState, location: inspection.exif.hasLocationMetadata ? "detected" : "not-detected", iccProfile: inspection.ancillaryMetadata.hasIccProfile ? "detected" : "not-detected", textComments: inspection.ancillaryMetadata.hasTextComments ? "detected" : "not-detected", xmp: inspection.ancillaryMetadata.hasXmp ? "detected" : "not-detected" }, cleanCopy: { offered: options.cleanCopyOffered, selectedFormat: options.cleanFormat, jpegQuality: options.cleanFormat === "jpeg" ? options.jpegQuality : null, estimatedSizeCategory: sizeCategory(options.estimatedBytes) }, privacyBoundary: { excludes: ["source filename", "image bytes", "preview URLs", "raw EXIF values", "XMP contents", "camera make or model", "capture time", "coordinates", "user identifiers"] } }, null, 2);
 }
+
+export function createCombinedBatchCsv(entries: Array<{ itemId: string; inspection: ImageInspection; options: ReportOptions }>, selectedFields: readonly SafeCsvField[] = DEFAULT_CSV_FIELDS) {
+  const permitted = new Set(selectedFields);
+  const rows = entries.flatMap(({ itemId, inspection, options }) => metadataReportRows(inspection, options).filter((row) => permitted.has(row[1] as SafeCsvField)).map((row) => [itemId, ...row]));
+  return [["item_id", "section", "field", "value", "clean_copy_effect"], ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+}

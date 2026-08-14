@@ -80,9 +80,9 @@ export function ImageInspector() {
     <section className="image-workspace" id="image-tool" aria-labelledby="image-tool-title">
       <div className="image-workspace__masthead">
         <div>
-          <span className="eyebrow"><span>IMAGE INSPECTOR / 01</span> Private Preflight mode</span>
-          <h1 id="image-tool-title">Inspect image facts before a photo travels.</h1>
-          <p>Read dimensions, file facts, and available EXIF metadata in this browser tab. The image never leaves your device.</p>
+          <span className="eyebrow"><span>IMAGE INSPECTOR / 01</span> Local inspection record</span>
+          <h1 id="image-tool-title">Image facts, before sharing.</h1>
+          <p>Add → inspect → review → decide. Read local file facts and available EXIF without moving the image from this browser tab.</p>
         </div>
         <div className="local-seal image-local-seal" aria-label="Local-only image processing"><img src="/manus-storage/private-csv-preflight-local-seal_34c78c7d.jpg" alt="" /><div><strong>LOCAL ONLY</strong><span>Image stays in this tab</span></div></div>
       </div>
