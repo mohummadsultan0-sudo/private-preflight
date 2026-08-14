@@ -97,7 +97,14 @@ export function CsvWorkspace() {
   const localSupported = typeof window !== "undefined" && "File" in window && "FileReader" in window;
 
   useEffect(() => {
-    if (pendingNonStandardFile || rejectedFile) decisionRef.current?.focus();
+    if (pendingNonStandardFile || rejectedFile) {
+      const decision = decisionRef.current;
+      if (!decision) return;
+      const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const top = window.scrollY + decision.getBoundingClientRect().top - Math.max(24, (window.innerHeight - decision.offsetHeight) / 2);
+      window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? "auto" : "smooth" });
+      decision.focus({ preventScroll: true });
+    }
   }, [pendingNonStandardFile, rejectedFile]);
 
   const reset = () => {
@@ -201,7 +208,7 @@ export function CsvWorkspace() {
       {!analysis && stage !== "complete" && (
         <div className="drop-layout">
           <div
-            className={`dropzone ${isDragging ? "dropzone--dragging" : ""} ${stage === "reading" || stage === "inspecting" ? "dropzone--busy" : ""}`}
+            className={`dropzone ${isDragging ? "dropzone--dragging" : ""} ${stage === "reading" || stage === "inspecting" ? "dropzone--busy" : ""} ${rejectedFile || pendingNonStandardFile ? "dropzone--decision" : ""}`}
             onDragOver={(event) => { event.preventDefault(); if (localSupported) setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (localSupported) chooseFile(event.dataTransfer.files?.[0]); }}
@@ -210,13 +217,13 @@ export function CsvWorkspace() {
             {rejectedFile ? (
               <div className="decision-card decision-card--inline" ref={decisionRef} tabIndex={-1} role="alert">
                 <div className="decision-card__glyph"><FileWarning aria-hidden="true" /></div>
-                <div><span className="eyebrow"><span>FILE NOT OPENED</span> Unsupported format</span><h2>“{rejectedFile.name}” is not a CSV text file.</h2><p>No image or file content was uploaded, opened, or analysed. Choose a local <code>.csv</code>, <code>.tsv</code>, or <code>.txt</code> export instead.</p></div>
+                <div className="decision-card__content"><span className="eyebrow"><span>FILE NOT OPENED</span> Unsupported format</span><h2>This file can’t be inspected here.</h2><p className="decision-card__filename-label" title={rejectedFile.name} aria-label={rejectedFile.name}>{rejectedFile.name}</p><p>{rejectedFile.type.startsWith("image/") ? "Images are intentionally not supported here because this is a CSV-only data inspector, not an image editor. " : ""}No file content was uploaded, opened, or analysed. Choose a local <code>.csv</code>, <code>.tsv</code>, or <code>.txt</code> export instead.</p></div>
                 <div className="decision-card__actions"><Button className="action-button" onClick={() => { setRejectedFile(null); inputRef.current?.click(); }}><Upload aria-hidden="true" /> Choose compatible file</Button><Button variant="ghost" className="quiet-button" onClick={() => setRejectedFile(null)}>Dismiss</Button></div>
               </div>
             ) : pendingNonStandardFile ? (
               <div className="decision-card decision-card--inline" ref={decisionRef} tabIndex={-1} role="alert">
                 <div className="decision-card__glyph"><AlertTriangle aria-hidden="true" /></div>
-                <div><span className="eyebrow"><span>CHECK</span> Unusual text extension</span><h2>Inspect “{pendingNonStandardFile.name}” as text?</h2><p>It does not end in .csv, .tsv, or .txt. The browser will attempt a local text read; binary or spreadsheet files will not be interpreted safely as CSV.</p></div>
+                <div className="decision-card__content"><span className="eyebrow"><span>CHECK</span> Unusual text extension</span><h2>Inspect this file as text?</h2><p className="decision-card__filename-label" title={pendingNonStandardFile.name} aria-label={pendingNonStandardFile.name}>{pendingNonStandardFile.name}</p><p>It does not end in .csv, .tsv, or .txt. The browser will attempt a local text read; binary or spreadsheet files will not be interpreted safely as CSV.</p></div>
                 <div className="decision-card__actions"><Button variant="outline" onClick={() => setPendingNonStandardFile(null)}>Cancel</Button><Button className="action-button" onClick={() => { const selected = pendingNonStandardFile; setPendingNonStandardFile(null); void inspect(selected); }}>Inspect local text</Button></div>
               </div>
             ) : stage === "reading" || stage === "inspecting" ? (
