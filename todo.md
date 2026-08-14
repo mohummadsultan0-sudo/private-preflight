@@ -1,9 +1,7 @@
-# Production-readiness review
+# Manual acceptance test matrix
 
-- [x] Inspect the deployed architecture and identify which requests require server work.
-- [x] Measure production HTTP response timings and frontend navigation behavior.
-- [x] Review the compiled asset budget and identify material client-side load costs.
-- [x] Determine whether a controlled concurrent-request test is appropriate and document its limits.
-- [x] State the supported conclusion for 1,000 simultaneous requests without fabricating capacity claims.
-
-The review used a deliberately bounded 20-request, 5-way concurrent sample against the published domain. It is evidence of small-burst stability only; it does not certify the platform for 1,000 simultaneous initial page loads.
+- [x] Prepare deterministic files for valid CSV, semicolon CSV, malformed CSV, empty CSV, duplicate-free CSV, image, PDF, unknown text, and oversized-file handling.
+- [x] Verify the valid-file path: upload, overview, structure, formula risk, duplicates, PII, reset, and both local download actions.
+- [x] Verify unsupported, empty, malformed, unknown-text, and file-size error paths show comprehensible recovery choices.
+- [x] Verify internal navigation, guide pages, responsive mobile layout, and keyboard focus order.
+- [x] Record every passed, blocked, and not-applicable scenario; fix defects that prevent reliable use.

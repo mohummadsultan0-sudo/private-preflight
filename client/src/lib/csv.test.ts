@@ -38,4 +38,12 @@ describe("analyzeText", () => {
     expect(createSpreadsheetSafeCsv(analysis)).toContain("\t=1+1");
     expect(createSpreadsheetSafeCsv(analysis)).toContain("Grace,42");
   });
+
+  it("preserves valid CSV quoting when a changed formula cell contains commas and quotes", () => {
+    const analysis = analyzeText('name,notes\nAda,"=HYPERLINK(""https://example.com"",""Review"")"', "fixture.csv");
+    const exported = createSpreadsheetSafeCsv(analysis);
+    const reparsed = parseDelimited(exported, ",");
+    expect(reparsed.issues).toHaveLength(0);
+    expect(reparsed.rows).toEqual([["name", "notes"], ["Ada", '\t=HYPERLINK("https://example.com","Review")']]);
+  });
 });

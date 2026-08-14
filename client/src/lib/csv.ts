@@ -393,4 +393,4 @@ export function downloadLocalText(contents: string, filename: string, type: stri
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export const DEMO_CSV = `customer_id,email,contact_phone,amount,notes\n1001,ada@example.com,+1 555 010 1234,120.00,First export\n1002,grace@example.com,+1 555 010 9876,80.00,=HYPERLINK(\"https://example.com\",\"Review\")\n1001,ada@example.com,+1 555 010 1234,120.00,First export\n1003,ops@example.com,,42.00,Pending`;
+export const DEMO_CSV = `customer_id,email,contact_phone,amount,notes\n1001,ada@example.com,+1 555 010 1234,120.00,First export\n1002,grace@example.com,+1 555 010 9876,80.00,"=HYPERLINK(""https://example.com"",""Review"")"\n1001,ada@example.com,+1 555 010 1234,120.00,First export\n1003,ops@example.com,,42.00,Pending`;
