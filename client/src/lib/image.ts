@@ -7,6 +7,20 @@ export type ImageMetadataState = "available" | "none" | "unreadable";
 export type CleanCopyFormat = "jpeg" | "png";
 
 export const CLEAN_JPEG_QUALITY = 0.9;
+export const JPEG_QUALITY_MIN = 40;
+export const JPEG_QUALITY_MAX = 95;
+export const DEFAULT_JPEG_QUALITY = 90;
+
+export interface AncillaryMetadata {
+  hasIccProfile: boolean;
+  hasTextComments: boolean;
+}
+
+export interface CleanCopyOptions {
+  jpegQuality?: number;
+  removeIccProfile?: boolean;
+  removeTextComments?: boolean;
+}
 
 export interface ImageExif {
   orientation?: number;
@@ -28,6 +42,7 @@ export interface ImageInspection {
   metadataState: ImageMetadataState;
   metadataNotice?: string;
   exif: ImageExif;
+  ancillaryMetadata: AncillaryMetadata;
 }
 
 export class ImageInspectionError extends Error {
@@ -197,6 +212,44 @@ function findWebpExif(bytes: Uint8Array): Uint8Array | null {
   return null;
 }
 
+export function readAncillaryMetadata(bytes: Uint8Array, type: SupportedImageType): AncillaryMetadata {
+  if (type === "jpeg") {
+    let cursor = 2;
+    let hasIccProfile = false;
+    let hasTextComments = false;
+    while (cursor + 4 <= bytes.length && bytes[cursor] === 0xff) {
+      while (bytes[cursor] === 0xff) cursor += 1;
+      const marker = bytes[cursor++];
+      if (marker === 0xd9 || marker === 0xda) break;
+      const segmentLength = (bytes[cursor] << 8) | bytes[cursor + 1];
+      if (segmentLength < 2 || cursor + segmentLength > bytes.length) break;
+      const payloadStart = cursor + 2;
+      if (marker === 0xe2 && ascii(bytes, payloadStart, 12) === "ICC_PROFILE") hasIccProfile = true;
+      if (marker === 0xfe) hasTextComments = true;
+      cursor += segmentLength;
+    }
+    return { hasIccProfile, hasTextComments };
+  }
+  if (type === "png") {
+    if (ascii(bytes, 1, 3) !== "PNG") return { hasIccProfile: false, hasTextComments: false };
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let cursor = 8;
+    let hasIccProfile = false;
+    let hasTextComments = false;
+    while (cursor + 12 <= bytes.length) {
+      const length = view.getUint32(cursor, false);
+      const chunkType = ascii(bytes, cursor + 4, 4);
+      const dataStart = cursor + 8;
+      if (dataStart + length + 4 > bytes.length) break;
+      if (chunkType === "iCCP") hasIccProfile = true;
+      if (chunkType === "tEXt" || chunkType === "zTXt" || chunkType === "iTXt") hasTextComments = true;
+      cursor = dataStart + length + 4;
+    }
+    return { hasIccProfile, hasTextComments };
+  }
+  return { hasIccProfile: false, hasTextComments: false };
+}
+
 export function extractExif(bytes: Uint8Array, type: SupportedImageType): { exif: ImageExif; state: ImageMetadataState; notice?: string } {
   if (type === "gif") return { exif: { hasLocationMetadata: false }, state: "none", notice: "GIF files do not carry the EXIF fields this tool reads." };
   const raw = type === "jpeg" ? findJpegExif(bytes) : type === "png" ? findPngExif(bytes) : findWebpExif(bytes);
@@ -214,6 +267,10 @@ export function supportedImageType(file: Pick<File, "name" | "type">): Supported
 
 export function canCreateCleanCopy(format: SupportedImageType, metadataState: ImageMetadataState): boolean {
   return format !== "gif" && metadataState !== "none";
+}
+
+export function clampJpegQuality(value: number): number {
+  return Math.min(JPEG_QUALITY_MAX, Math.max(JPEG_QUALITY_MIN, Math.round(value)));
 }
 
 function validateImageFile(file: File): SupportedImageType {
@@ -290,17 +347,41 @@ async function decodeForCanvas(file: File): Promise<CanvasSource> {
   });
 }
 
-function canvasToCleanBlob(canvas: HTMLCanvasElement, outputFormat: CleanCopyFormat): Promise<Blob> {
+function canvasToCleanBlob(canvas: HTMLCanvasElement, outputFormat: CleanCopyFormat, jpegQuality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
       else reject(new ImageCleanError("clean_failed", `The browser could not encode the clean ${outputFormat.toUpperCase()} copy.`));
-    }, CLEAN_COPY_MIME[outputFormat], outputFormat === "jpeg" ? CLEAN_JPEG_QUALITY : undefined);
+    }, CLEAN_COPY_MIME[outputFormat], outputFormat === "jpeg" ? clampJpegQuality(jpegQuality) / 100 : undefined);
   });
 }
 
+async function stripJpegAncillarySegments(blob: Blob): Promise<Blob> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return blob;
+  const kept: Uint8Array[] = [bytes.slice(0, 2)];
+  let cursor = 2;
+  while (cursor + 2 <= bytes.length) {
+    const start = cursor;
+    if (bytes[cursor] !== 0xff) { kept.push(bytes.slice(start)); break; }
+    while (bytes[cursor] === 0xff) cursor += 1;
+    const marker = bytes[cursor++];
+    if (marker === 0xda) { kept.push(bytes.slice(start)); break; }
+    if (marker === 0xd9) { kept.push(bytes.slice(start, cursor)); break; }
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { kept.push(bytes.slice(start, cursor)); continue; }
+    if (cursor + 2 > bytes.length) break;
+    const segmentLength = (bytes[cursor] << 8) | bytes[cursor + 1];
+    if (segmentLength < 2 || cursor + segmentLength > bytes.length) break;
+    const payloadStart = cursor + 2;
+    const isIcc = marker === 0xe2 && ascii(bytes, payloadStart, 12) === "ICC_PROFILE";
+    if (!isIcc && marker !== 0xfe) kept.push(bytes.slice(start, cursor + segmentLength));
+    cursor += segmentLength;
+  }
+  return new Blob(kept, { type: CLEAN_COPY_MIME.jpeg });
+}
+
 /** Re-encodes visible local pixels; source EXIF and source-file metadata are not carried into the new blob. */
-export async function createExifFreeImage(file: File, outputFormat: CleanCopyFormat): Promise<Blob> {
+export async function createExifFreeImage(file: File, outputFormat: CleanCopyFormat, jpegQuality = DEFAULT_JPEG_QUALITY): Promise<Blob> {
   const type = validateImageFile(file);
   if (type === "gif") throw new ImageCleanError("not_cleanable", "GIF clean copies are not available because this release does not re-encode animated images.");
   let decoded: CanvasSource | null = null;
@@ -317,7 +398,8 @@ export async function createExifFreeImage(file: File, outputFormat: CleanCopyFor
       context.fillRect(0, 0, decoded.width, decoded.height);
     }
     context.drawImage(decoded.source, 0, 0, decoded.width, decoded.height);
-    return await canvasToCleanBlob(canvas, outputFormat);
+    const blob = await canvasToCleanBlob(canvas, outputFormat, jpegQuality);
+    return outputFormat === "jpeg" ? await stripJpegAncillarySegments(blob) : blob;
   } catch (caught) {
     if (caught instanceof ImageCleanError || caught instanceof ImageInspectionError) throw caught;
     throw new ImageCleanError("clean_failed", "The browser could not create a clean copy locally. Your original image was not changed.");
@@ -353,7 +435,8 @@ export async function inspectImageFile(file: File): Promise<ImageInspection> {
   const type = validateImageFile(file);
   try {
     const [buffer, dimensions] = await Promise.all([file.arrayBuffer(), readDimensions(file)]);
-    const metadata = extractExif(new Uint8Array(buffer), type);
+    const bytes = new Uint8Array(buffer);
+    const metadata = extractExif(bytes, type);
     if (!dimensions.width || !dimensions.height) throw new ImageInspectionError("decode_failed", "The browser could not read dimensions from this image.");
     return {
       fileName: file.name,
@@ -367,6 +450,7 @@ export async function inspectImageFile(file: File): Promise<ImageInspection> {
       metadataState: metadata.state,
       ...(metadata.notice ? { metadataNotice: metadata.notice } : {}),
       exif: metadata.exif,
+      ancillaryMetadata: readAncillaryMetadata(bytes, type),
     };
   } catch (caught) {
     if (caught instanceof ImageInspectionError) throw caught;

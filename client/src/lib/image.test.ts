@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only image metadata parser. */
 import { describe, expect, it } from "vitest";
-import { canCreateCleanCopy, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, parseTiffExif, supportedImageType } from "./image";
+import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
 
 function withExifTiff(): Uint8Array {
   const bytes = new Uint8Array(50);
@@ -11,6 +11,15 @@ function withExifTiff(): Uint8Array {
   bytes.set([0x00, 0x00, 0x00, 0x00], 34);
   bytes.set([0x43, 0x61, 0x6e, 0x6f, 0x6e, 0x00], 38);
   return bytes;
+}
+
+function jpegWithAncillarySegments(): Uint8Array {
+  return new Uint8Array([
+    0xff, 0xd8,
+    0xff, 0xe2, 0x00, 0x0e, 0x49, 0x43, 0x43, 0x5f, 0x50, 0x52, 0x4f, 0x46, 0x49, 0x4c, 0x45, 0x00,
+    0xff, 0xfe, 0x00, 0x04, 0x6e, 0x6f,
+    0xff, 0xd9,
+  ]);
 }
 
 describe("local image metadata", () => {
@@ -38,5 +47,12 @@ describe("local image metadata", () => {
     expect(cleanCopyFileName("holiday.photo.JPG")).toBe("holiday.photo-clean.png");
     expect(cleanCopyFileName("holiday.photo.JPG", "jpeg")).toBe("holiday.photo-clean.jpg");
     expect(CLEAN_JPEG_QUALITY).toBe(0.9);
+  });
+
+  it("bounds JPEG quality and detects ancillary ICC and comment segments", () => {
+    expect(clampJpegQuality(1)).toBe(JPEG_QUALITY_MIN);
+    expect(clampJpegQuality(100)).toBe(JPEG_QUALITY_MAX);
+    expect(clampJpegQuality(82.6)).toBe(83);
+    expect(readAncillaryMetadata(jpegWithAncillarySegments(), "jpeg")).toEqual({ hasIccProfile: true, hasTextComments: true });
   });
 });

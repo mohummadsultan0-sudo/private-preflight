@@ -37,3 +37,11 @@
 - [x] Show a clear before-and-after metadata comparison for the selected clean-copy output.
 - [x] Copy a concise local privacy summary to the clipboard with visible success and recovery states.
 - [x] Verify JPEG and PNG output downloads, no-EXIF behavior, clipboard handling, metadata comparison, and mobile controls.
+
+## JPEG quality and advanced clean-copy controls
+
+- [x] Define JPEG quality range, estimate behavior, and limitations of decoding/re-encoding ICC profiles and textual comments.
+- [x] Implement an interactive JPEG quality slider and local output-size estimate before download.
+- [x] Implement advanced ICC-profile and textual-comment options with plain-language, format-aware explanations.
+- [x] Verify low- and high-quality JPEG output, estimate updates, advanced-option states, and metadata absence after download.
+- [x] Verify mobile controls, unsupported/no-metadata behavior, recovery messages, tests, and production build.

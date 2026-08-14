@@ -94,6 +94,22 @@ Both selected outputs were verified after download. The clean JPEG was a 1 × 2 
 
 The final visual refinement compresses the page heading, gives the workbench the first visual read, transforms the evidence panel into a warm-paper evidence insert, and repeats thin evidence marks and the local inspection stamp throughout the surface.
 
+## JPEG quality, size estimate, and advanced ancillary cleanup
+
+The clean JPEG control exposes a **40–95** quality slider, defaulting to **90**. The value is passed directly to browser canvas encoding; lower values usually reduce file size but may introduce visible compression artifacts. The tool generates a local preview encode after a brief input pause and reports its resulting byte size as an **estimate**, since the final encode can differ slightly between browser implementations. PNG remains lossless and reports its locally generated size estimate without a quality control.
+
+The inspector detects a JPEG ICC colour profile and JPEG comment segments, plus PNG ICC and textual chunks where present. Every clean PNG discards those ancillary fields because it is re-encoded from pixels. Clean JPEG explicitly strips ICC and JPEG comment segments from the generated container, even when a browser encoder initially retains them. The comparison ledger states whether each detected field is removed or absent. These options address container metadata only and do not remove visible watermarks, text baked into pixels, or non-supported metadata containers.
+
+An end-to-end fixture containing EXIF, an ICC profile segment, and a textual JPEG comment has been dispatched through the normal drop surface. The next visible assertion checks detection of every field, the default quality setting, and the local pre-download estimate.
+
+The result detected EXIF, location, ICC, and text-comment signals. Its comparison marks all of them for removal, shows the default JPEG quality of 90, and reports an estimated 850 B clean JPEG before download. The advanced disclosure explains the role of each ancillary field and the limit of pixel re-encoding.
+
+Changing the interactive JPEG slider updated the quality to 68 and recalculated the local estimate to 819 B. The privacy summary updated to the same selected quality, and the subsequent download reported success. The next check inspects the downloaded JPEG for removed EXIF, ICC, and comment segments.
+
+The initial structural check revealed that the browser JPEG encoder had retained an ICC segment, so the clean-copy engine now strips ICC and JPEG comment segments explicitly from the generated JPEG container. The revised estimate for the same quality-68 output is 345 B, and a newly downloaded copy is ready for structural verification.
+
+The structural verification passed for the revised 345 B, 64 × 96 JPEG: the application parser reported no EXIF, no ICC profile, and no textual comment segment. The phone and desktop empty-state layouts remained vertically balanced after the controls were added; the rich controls appear only after a local image is inspected.
+
 An empty, declared-JPEG file was dispatched next through the same drop surface. The following visual check verifies the dedicated empty-file recovery state.
 
 The empty-file check rendered its own recovery message, instructing the user to choose a non-empty image and retaining the no-upload, no-storage, and no-send assurance.
