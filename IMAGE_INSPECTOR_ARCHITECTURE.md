@@ -136,6 +136,16 @@ The structural check passed for the 366 B, 80 × 40 clean JPEG: the application 
 
 The optional JSON download contains an event timestamp, non-sensitive file facts (format, MIME type, dimensions, byte-size category), metadata **presence states**, selected output quality, browser-encoder mode, output-size estimate, and the tool’s local-processing boundary. It intentionally excludes the source filename, image bytes, preview URLs, raw EXIF field values, XMP contents, camera make/model, capture time, coordinates, and any user identifier.
 
+## Local CSV metadata report
+
+The CSV download uses the columns `section`, `field`, `value`, and `clean_copy_effect`. It represents only non-sensitive file facts, metadata **presence** signals, local clean-copy settings, and privacy boundaries. Every cell is RFC-style quoted when necessary; values that could be interpreted as spreadsheet formulas are prefixed with an apostrophe before CSV escaping. The report intentionally excludes the source filename, image bytes, preview URLs, raw EXIF/XMP content, camera fields, capture time, coordinates, user identifiers, and any raw file-size value; it uses only a size category.
+
+A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
+
+The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.
+
+The downloaded UTF-8-with-BOM CSV contained the expected `section,field,value,clean_copy_effect` header and rows for safe source facts, metadata presence signals, clean-copy settings, and privacy exclusions. It excluded the source name, raw image data, camera values, preview URLs, and coordinate values. The application tests, TypeScript check, and production build passed after the CSV export was added.
+
 The browser canvas encoder used by this static release exposes JPEG quality but does not expose a reliable Progressive/Baseline switch. The settings surface therefore shows **Baseline-compatible browser output** as the active local mode and identifies **Progressive JPEG** as unavailable in this browser-only build rather than claiming a setting that cannot be honored. This choice is saved with the existing local preferences; it carries no image data.
 
 The JPEG comparison offers a pointer- and keyboard-accessible magnifier that enlarges one preview at a time. It uses the locally generated object URLs already needed for preview and does not transmit, persist, or analyse pixels beyond browser decoding/encoding. The magnifier is a visual aid and does not certify perceptual equivalence.

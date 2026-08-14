@@ -61,3 +61,9 @@
 - [x] Implement an explicit JPEG mode setting with accurate browser-capability explanation and persistence.
 - [x] Implement an accessible, local before/after magnifier for clean JPEG previews.
 - [x] Verify JSON content and download, JPEG mode messaging, magnifier interaction, saved settings, mobile controls, tests, and production build.
+
+## CSV metadata report
+
+- [x] Define CSV columns, spreadsheet-safe escaping, and the privacy exclusions for metadata report exports.
+- [x] Implement a local CSV metadata-report download beside the JSON report.
+- [x] Verify CSV headers, rows, quoting, absence of sensitive raw values, spreadsheet import, mobile controls, tests, and production build.
