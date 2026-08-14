@@ -12,3 +12,13 @@
 - [x] Ensure the mobile rejection card keeps its explanation and both actions visible and easy to tap.
 - [x] Test the repaired flow at 320 px, 360 px, 390 px, and 430 px viewport widths.
 - [x] Confirm that images remain deliberately unsupported by the CSV tool and that the rejection copy explains the reason.
+
+## Local image inspector
+
+- [x] Define the locally supported image types and explicit EXIF availability limits.
+- [x] Build and test local extraction of file facts, dimensions, orientation, and available JPEG EXIF tags.
+- [x] Add a separate image-inspection page and route without changing the CSV tool’s file contract.
+- [x] Test valid PNG, image without EXIF, corrupt image, oversized image, unsupported format, and mobile layouts.
+- [x] Confirm that image-inspector application code makes no file-analysis request: the local inspector uses File, ArrayBuffer, object URLs, and browser image decoding only. General page-visit measurement is disclosed separately and does not receive file bytes, names, metadata, previews, or CSV values.
+- [x] Verify navigation from image inspection to CSV preflight and back, using the app’s internal routes.
+- [x] Add `/image-inspector` to the static XML sitemap.

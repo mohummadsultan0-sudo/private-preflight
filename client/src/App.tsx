@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import { Guide } from "./pages/Guide";
+import ImageInspectorPage from "./pages/ImageInspector";
 import Privacy from "./pages/Privacy";
 
 
@@ -14,6 +15,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/image-inspector"} component={ImageInspectorPage} />
       <Route path={"/csv-formula-injection-scanner"} component={() => <Guide kind="formula" />} />
       <Route path={"/csv-validator"} component={() => <Guide kind="validator" />} />
       <Route path={"/csv-duplicate-finder"} component={() => <Guide kind="duplicates" />} />

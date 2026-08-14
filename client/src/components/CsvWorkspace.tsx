@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuditTrail } from "@/components/AuditTrail";
 import {
   analyzeFile,
   CsvAnalysis,
@@ -188,7 +189,7 @@ export function CsvWorkspace() {
     <section className="workspace" id="tool" aria-labelledby="tool-heading">
       <div className="workspace__masthead">
         <div>
-          <div className="eyebrow"><span>01</span> Browser-only file checkpoint</div>
+          <div className="eyebrow"><span>CSV PREFLIGHT / 01</span> Browser-only file checkpoint</div>
           <h1 id="tool-heading">Inspect the file before the spreadsheet interprets it.</h1>
           <p className="lede">Structure, duplicate, formula-risk and potential PII checks run in this browser tab. The application never uploads your CSV.</p>
         </div>
@@ -198,6 +199,9 @@ export function CsvWorkspace() {
         </div>
       </div>
 
+      <div className="inspection-frame">
+        <AuditTrail mode="csv" phase={analysis ? "ready" : stage === "reading" || stage === "inspecting" ? "reading" : stage === "error" ? "error" : "idle"} />
+        <div className="inspection-frame__content">
       {!localSupported && (
         <div className="inline-alert inline-alert--error" role="alert">
           <TriangleAlert aria-hidden="true" />
@@ -338,6 +342,8 @@ export function CsvWorkspace() {
           </div>
         </div>
       )}
+        </div>
+      </div>
 
       {showSafeExport && analysis && (
         <div className="dialog-backdrop" role="presentation" onMouseDown={() => setShowSafeExport(false)}>
@@ -350,8 +356,8 @@ export function CsvWorkspace() {
       )}
 
       <div className="ad-boundary" aria-label="Reserved advertisement placement">
-        <span>ADVERTISEMENT — RESERVED AFTER PROVIDER APPROVAL</span>
-        <p>The tool remains usable if this space is blocked, empty, or unavailable.</p>
+        <span>OPERATING NOTE / 05</span>
+        <p>Advertising is not active. If added later, it remains outside the inspection path and never receives selected-file state.</p>
       </div>
       <p id="privacy-note" className="tool-disclaimer"><ShieldCheck aria-hidden="true" /> This tool reports local signals, not compliance, safety, or security guarantees. <a href="/privacy">Read how local processing works.</a></p>
     </section>
