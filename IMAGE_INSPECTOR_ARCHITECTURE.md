@@ -74,6 +74,26 @@ The simulated encoder failure showed `The browser could not encode the clean PNG
 
 The release check passed 10 deterministic tests (CSV and image logic), TypeScript validation, and the production build. The Image Inspector’s final workbench now places the active Add / Inspect / Review / Decide flow ahead of the editorial framing while preserving the `Private Preflight` suite hierarchy. The clean-copy card is shown only when a non-GIF image has EXIF to remove; GIF files remain inspection-only in this release.
 
+## Clean-copy formats, comparison, and shareable summary
+
+The user may choose **Clean JPEG** or **Clean PNG** before downloading. Both outputs are re-encoded in browser memory from the visible decoded pixels, remove the source EXIF block and associated source-file metadata, and never modify the original. JPEG uses browser canvas quality `0.90` to prioritize a smaller file; because JPEG has no alpha channel, transparent source pixels are flattened against white. PNG remains lossless for visible pixels and retains transparency when the browser supports it. Output names end in `-clean.jpg` or `-clean.png`.
+
+The result presents a compact before/after ledger that compares the detected EXIF block, camera make, camera model, capture time, and location signal against the selected clean-copy output. For each detected source field, the output state is **Removed**; fields that were absent remain **Not recorded**. This is a metadata comparison, not a claim about visual content, embedded watermarks, or all possible non-EXIF data.
+
+The **Copy privacy summary** control writes a concise, human-readable statement to the clipboard. The text identifies the local-only inspection path, EXIF and location status, and selected output format, but intentionally excludes the original filename, camera values, coordinates, and image bytes. If browser clipboard access is unavailable or rejected, a visible recovery message instructs the user to copy manually from the on-screen summary.
+
+An end-to-end test now loads a decodable JPEG with orientation, camera, capture-time, and location EXIF fields through the ordinary drop surface. The next visual check verifies the before/after ledger, default JPEG choice, alternative PNG choice, and the local privacy-summary control.
+
+The JPEG result showed each detected source field alongside its clean-JPEG state: EXIF, camera make/model, capture time, and location were marked **Removed**, while orientation was marked **Normalized**. The default JPEG control reported its quality-90 sizing intent and a successful local download. The original inspection remained visible after download.
+
+Changing the selected format updated the comparison header, call-to-action, and privacy-summary wording to **PNG**. The PNG choice then completed a local download with the matching success state, confirming that the selected output governs the generated file rather than merely changing its label.
+
+The Copy privacy summary action completed with a visible success acknowledgement. The on-screen summary contains only local-processing and metadata-status statements, not the source filename, image bytes, camera values, or coordinates. At 390 px, the image workspace remains a single vertical flow with a full-width selection action and no page-level horizontal overflow; comparison rows are contained in their own mobile-safe scroll region when present.
+
+Both selected outputs were verified after download. The clean JPEG was a 1 × 2 baseline JPEG with its `-clean.jpg` name, and the clean PNG was a 1 × 2 RGBA PNG with its `-clean.png` name. The application’s EXIF parser returned `metadataState: none` and `hasLocationMetadata: false` for each output. The privacy-summary button produced its copied confirmation, while the production test suite, TypeScript validation, and production build all passed.
+
+The final visual refinement compresses the page heading, gives the workbench the first visual read, transforms the evidence panel into a warm-paper evidence insert, and repeats thin evidence marks and the local inspection stamp throughout the surface.
+
 An empty, declared-JPEG file was dispatched next through the same drop surface. The following visual check verifies the dedicated empty-file recovery state.
 
 The empty-file check rendered its own recovery message, instructing the user to choose a non-empty image and retaining the no-upload, no-storage, and no-send assurance.

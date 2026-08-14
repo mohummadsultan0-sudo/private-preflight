@@ -4,6 +4,9 @@ export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 export type SupportedImageType = "jpeg" | "png" | "webp" | "gif";
 export type ImageMetadataState = "available" | "none" | "unreadable";
+export type CleanCopyFormat = "jpeg" | "png";
+
+export const CLEAN_JPEG_QUALITY = 0.9;
 
 export interface ImageExif {
   orientation?: number;
@@ -46,6 +49,11 @@ export class ImageCleanError extends Error {
     this.name = "ImageCleanError";
   }
 }
+
+const CLEAN_COPY_MIME: Record<CleanCopyFormat, string> = {
+  jpeg: "image/jpeg",
+  png: "image/png",
+};
 
 const MIME_TO_TYPE: Record<string, SupportedImageType> = {
   "image/jpeg": "jpeg",
@@ -282,17 +290,17 @@ async function decodeForCanvas(file: File): Promise<CanvasSource> {
   });
 }
 
-function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
+function canvasToCleanBlob(canvas: HTMLCanvasElement, outputFormat: CleanCopyFormat): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new ImageCleanError("clean_failed", "The browser could not encode the clean PNG copy."));
-    }, "image/png");
+      else reject(new ImageCleanError("clean_failed", `The browser could not encode the clean ${outputFormat.toUpperCase()} copy.`));
+    }, CLEAN_COPY_MIME[outputFormat], outputFormat === "jpeg" ? CLEAN_JPEG_QUALITY : undefined);
   });
 }
 
-/** Re-encodes visible local pixels as PNG; source EXIF and source-file metadata are not carried into the new blob. */
-export async function createExifFreePng(file: File): Promise<Blob> {
+/** Re-encodes visible local pixels; source EXIF and source-file metadata are not carried into the new blob. */
+export async function createExifFreeImage(file: File, outputFormat: CleanCopyFormat): Promise<Blob> {
   const type = validateImageFile(file);
   if (type === "gif") throw new ImageCleanError("not_cleanable", "GIF clean copies are not available because this release does not re-encode animated images.");
   let decoded: CanvasSource | null = null;
@@ -304,19 +312,27 @@ export async function createExifFreePng(file: File): Promise<Blob> {
     canvas.height = decoded.height;
     const context = canvas.getContext("2d");
     if (!context) throw new ImageCleanError("clean_failed", "The browser could not prepare a local clean-copy canvas.");
+    if (outputFormat === "jpeg") {
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, decoded.width, decoded.height);
+    }
     context.drawImage(decoded.source, 0, 0, decoded.width, decoded.height);
-    return await canvasToPng(canvas);
+    return await canvasToCleanBlob(canvas, outputFormat);
   } catch (caught) {
     if (caught instanceof ImageCleanError || caught instanceof ImageInspectionError) throw caught;
-    throw new ImageCleanError("clean_failed", "The browser could not create a clean PNG locally. Your original image was not changed.");
+    throw new ImageCleanError("clean_failed", "The browser could not create a clean copy locally. Your original image was not changed.");
   } finally {
     decoded?.release();
   }
 }
 
-export function cleanCopyFileName(fileName: string): string {
+export function createExifFreePng(file: File): Promise<Blob> {
+  return createExifFreeImage(file, "png");
+}
+
+export function cleanCopyFileName(fileName: string, outputFormat: CleanCopyFormat = "png"): string {
   const baseName = fileName.replace(/\.[^.]+$/, "") || "image";
-  return `${baseName}-clean.png`;
+  return `${baseName}-clean.${outputFormat === "jpeg" ? "jpg" : "png"}`;
 }
 
 export function downloadLocalBlob(blob: Blob, fileName: string): void {

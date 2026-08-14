@@ -29,3 +29,11 @@
 - [x] Implement a local clean-copy action that preserves the original file and provides an explicit browser download.
 - [x] Verify that a JPEG containing EXIF downloads as a new image with no readable EXIF or location metadata.
 - [x] Verify non-EXIF images, decoding failures, download failures, mobile controls, and privacy copy.
+
+## Clean-copy formats and privacy summary
+
+- [x] Define JPEG quality, alpha-handling, file-name, and metadata-removal limits for local clean-copy downloads.
+- [x] Implement a user-selected clean JPEG or clean PNG download without changing the original file.
+- [x] Show a clear before-and-after metadata comparison for the selected clean-copy output.
+- [x] Copy a concise local privacy summary to the clipboard with visible success and recovery states.
+- [x] Verify JPEG and PNG output downloads, no-EXIF behavior, clipboard handling, metadata comparison, and mobile controls.
