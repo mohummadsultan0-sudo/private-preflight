@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>/</loc></url>
+  <url><loc>/csv-formula-injection-scanner</loc></url>
+  <url><loc>/csv-validator</loc></url>
+  <url><loc>/csv-duplicate-finder</loc></url>
+  <url><loc>/csv-pii-checker</loc></url>
+  <url><loc>/privacy</loc></url>
+</urlset>
