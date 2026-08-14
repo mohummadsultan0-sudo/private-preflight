@@ -67,3 +67,11 @@
 - [x] Define CSV columns, spreadsheet-safe escaping, and the privacy exclusions for metadata report exports.
 - [x] Implement a local CSV metadata-report download beside the JSON report.
 - [x] Verify CSV headers, rows, quoting, absence of sensitive raw values, spreadsheet import, mobile controls, tests, and production build.
+
+## Batch processing, CSV field filters, and ZIP bundles
+
+- [x] Define supported batch limit, per-file recovery states, CSV field-selection privacy limits, and ZIP bundle contents.
+- [x] Implement local multi-image selection, per-image inspection, and clean-copy creation without uploading files.
+- [x] Implement selectable CSV metadata fields and a local filtered CSV download.
+- [x] Implement local ZIP bundles containing clean copies and JSON/CSV reports for eligible batch items.
+- [x] Verify valid and rejected batch items, selected CSV fields, ZIP contents, metadata removal, mobile controls, tests, and production build.

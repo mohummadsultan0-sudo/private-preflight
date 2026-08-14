@@ -140,6 +140,26 @@ The optional JSON download contains an event timestamp, non-sensitive file facts
 
 The CSV download uses the columns `section`, `field`, `value`, and `clean_copy_effect`. It represents only non-sensitive file facts, metadata **presence** signals, local clean-copy settings, and privacy boundaries. Every cell is RFC-style quoted when necessary; values that could be interpreted as spreadsheet formulas are prefixed with an apostrophe before CSV escaping. The report intentionally excludes the source filename, image bytes, preview URLs, raw EXIF/XMP content, camera fields, capture time, coordinates, user identifiers, and any raw file-size value; it uses only a size category.
 
+## Batch processing, selected CSV fields, and ZIP bundles
+
+The batch workspace accepts at most **8** supported images at once, with the existing **15 MB per-file** limit and a **40 MB combined** input limit. Each selection is inspected in browser memory in sequence. A rejected, oversized, or undecodable item is recorded with its own explanation and does not prevent the remaining eligible items from being reviewed or cleaned. Original inputs are not changed, uploaded, cached, or included in a bundle.
+
+The CSV chooser permits only pre-defined, privacy-safe signal fields: format, MIME type, dimensions, megapixels, size category, EXIF availability, location signal, ICC signal, text-comment signal, XMP signal, chosen output format, JPEG quality, and clean-copy effect. Source name, raw field values, image bytes, preview URLs, coordinates, and user identifiers cannot be selected. At least one safe field must remain selected before export.
+
+For eligible JPEG, PNG, and WebP items with metadata to remove, the ZIP action creates each selected clean copy plus one corresponding JSON and CSV report inside a single browser-generated `private-preflight-image-bundle.zip`. It excludes originals, rejected items, raw metadata, and source names from report contents. GIF entries remain inspection-only and rejected/unsupported entries remain outside the bundle. If memory, encoding, or ZIP creation fails, the UI preserves the item list and gives a recovery action; no partial bundle is downloaded.
+
+The batch workspace renders from the empty image-inspection state with a clear local queue entry point, its 8-image and 40 MB limits, and an explicit multi-file chooser. The expanded state exposes the local add surface without altering the individual image inspection path.
+
+A real local drop containing two decodable EXIF-bearing JPEGs and one PDF completed with two rows marked ready for clean copies, one PDF row marked rejected with its own supported-type explanation, and an enabled ZIP action for the eligible images. The rejected item did not prevent the remaining entries from proceeding.
+
+The ZIP action completed with a local success acknowledgement. Its listing contained two clean JPEGs, two JSON reports, two CSV reports, a README, and the `clean/` and `reports/` organization folders. It contained neither the original names nor the rejected PDF. The checked CSV inside the ZIP had the expected safe header and signal rows.
+
+A separate local JPEG inspection exposed the individual CSV field picker with 15 pre-defined, safe report fields. The next interaction reduces that list before download to verify that only explicitly selected fields are emitted.
+
+The chooser was reduced to `format`, `mime type`, and `exif`; the visible summary changed to three selected fields and the CSV download stayed enabled. The next step downloads this filtered report for row-level verification.
+
+The filtered download contained the header plus only the `format`, `mime_type`, and `exif` rows—no unselected rows and no source name or raw values. The batch entry point was rendered at 1280 px and 390 px: desktop retains the workbench and a concise batch card, while phone collapses the batch call-to-action to a readable full-width control without horizontal clipping. The complete suite passes 13 deterministic tests, TypeScript validation, and the production build.
+
 A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
 
 The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.

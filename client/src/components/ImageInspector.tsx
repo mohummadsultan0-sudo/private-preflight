@@ -4,6 +4,7 @@ import { AlertTriangle, Camera, FileImage, ImageIcon, LockKeyhole, MapPin, Rotat
 import { Button } from "@/components/ui/button";
 import { AuditTrail } from "@/components/AuditTrail";
 import { ImageCleanActions } from "@/components/ImageCleanActions";
+import { BatchImageProcessor } from "@/components/BatchImageProcessor";
 import { ImageInspection, ImageInspectionError, inspectImageFile, MAX_IMAGE_BYTES, supportedImageType } from "@/lib/image";
 
 type ImageStage = "idle" | "reading" | "complete" | "error";
@@ -97,6 +98,7 @@ export function ImageInspector() {
                 <div className="image-dropzone__foot"><LockKeyhole aria-hidden="true" /><span>Hard limit: {MAX_IMAGE_BYTES / 1024 / 1024} MB for predictable local inspection.</span></div>
               </div>
               <aside className="image-side-note"><span>INSPECT / 02 — LOCAL EVIDENCE</span><ol><li><ImageIcon aria-hidden="true" /><span>File type, byte size, dimensions, aspect ratio, and megapixels.</span></li><li><Camera aria-hidden="true" /><span>Available orientation, make, model, and capture-time EXIF tags.</span></li><li><MapPin aria-hidden="true" /><span>A location-metadata signal, never raw coordinates.</span></li></ol><p>Missing EXIF is normal and is not a warning by itself.</p></aside>
+              <BatchImageProcessor />
             </div>
           )}
 
