@@ -1,8 +1,9 @@
-# Follow-up: unsupported file flow
+# Production-readiness review
 
-- [x] Reproduce the reported image/unsupported-file upload flow on the published site.
-- [x] Move the unsupported-file decision notice into the immediate upload surface and focus it when shown.
-- [x] Make the accepted CSV, TSV, and TXT formats more explicit before selection.
-- [x] Verify desktop image rejection inside the upload surface and review the mobile layout after the change.
+- [x] Inspect the deployed architecture and identify which requests require server work.
+- [x] Measure production HTTP response timings and frontend navigation behavior.
+- [x] Review the compiled asset budget and identify material client-side load costs.
+- [x] Determine whether a controlled concurrent-request test is appropriate and document its limits.
+- [x] State the supported conclusion for 1,000 simultaneous requests without fabricating capacity claims.
 
-The desktop test dispatched a local `sample.png` drop into the upload surface. The app showed the rejection card immediately inside that surface, stated that nothing was uploaded or analysed, and offered a compatible-file action. The mobile upload layout was also reviewed after the change.
+The review used a deliberately bounded 20-request, 5-way concurrent sample against the published domain. It is evidence of small-burst stability only; it does not certify the platform for 1,000 simultaneous initial page loads.

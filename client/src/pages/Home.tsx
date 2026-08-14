@@ -1,5 +1,6 @@
 /** Audit Ledger style: the browser-native inspection tool leads; sales copy is deliberately secondary to the working surface. */
 import { ArrowUpRight, Braces, CheckCircle2, FileSearch, LockKeyhole, ScanLine, ShieldCheck } from "lucide-react";
+import { Link } from "wouter";
 import { BrandMark } from "@/components/BrandMark";
 import { CsvWorkspace } from "@/components/CsvWorkspace";
 
@@ -9,7 +10,7 @@ export default function Home() {
       <header className="site-header">
         <div className="site-header__inner">
           <BrandMark />
-          <nav aria-label="Primary navigation"><a href="#tool">Inspect a file</a><a href="#how-it-works">How it works</a><a href="/csv-formula-injection-scanner">Formula risk</a><a href="/privacy">Privacy</a></nav>
+          <nav aria-label="Primary navigation"><a href="#tool">Inspect a file</a><a href="#how-it-works">How it works</a><Link href="/csv-formula-injection-scanner">Formula risk</Link><Link href="/privacy">Privacy</Link></nav>
           <a href="#tool" className="header-action">Open preflight <ArrowUpRight aria-hidden="true" /></a>
         </div>
       </header>
@@ -28,7 +29,7 @@ export default function Home() {
           <div className="boundary-section__copy"><span className="eyebrow"><span>BOUNDARY / 04</span> No operational backend</span><h2 id="boundaries-title">Your data has a short path.</h2><p>There is no analysis API to wait on, no account to create, and no file store to clean up. The static site delivers this interface; the selected CSV remains in browser memory while you use it.</p><div className="boundary-list"><div><ShieldCheck aria-hidden="true" /><span><strong>Built for local handling</strong><small>No application endpoint receives a selected file.</small></span></div><div><Braces aria-hidden="true" /><span><strong>Rules you can question</strong><small>Every finding is a visible structure or pattern signal.</small></span></div><div><CheckCircle2 aria-hidden="true" /><span><strong>Exports are explicit</strong><small>The original file is never overwritten by this page.</small></span></div></div></div>
         </section>
       </main>
-      <footer className="site-footer"><div><BrandMark compact /><p>Private CSV Preflight · Browser-native inspection for CSV files.</p></div><div><a href="/csv-validator">CSV validator</a><a href="/csv-duplicate-finder">Duplicate finder</a><a href="/csv-pii-checker">PII signals</a><a href="/privacy">Privacy</a></div><small>© {new Date().getFullYear()} Private CSV Preflight. Signals, not guarantees.</small></footer>
+      <footer className="site-footer"><div><BrandMark compact /><p>Private CSV Preflight · Browser-native inspection for CSV files.</p></div><div><Link href="/csv-validator">CSV validator</Link><Link href="/csv-duplicate-finder">Duplicate finder</Link><Link href="/csv-pii-checker">PII signals</Link><Link href="/privacy">Privacy</Link></div><small>© {new Date().getFullYear()} Private CSV Preflight. Signals, not guarantees.</small></footer>
     </div>
   );
 }
