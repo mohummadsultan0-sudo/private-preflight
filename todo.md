@@ -45,3 +45,11 @@
 - [x] Implement advanced ICC-profile and textual-comment options with plain-language, format-aware explanations.
 - [x] Verify low- and high-quality JPEG output, estimate updates, advanced-option states, and metadata absence after download.
 - [x] Verify mobile controls, unsupported/no-metadata behavior, recovery messages, tests, and production build.
+
+## JPEG preview, local preferences, and XMP
+
+- [x] Define preview scope, preference-storage privacy limits, and XMP detection/removal behavior by image format.
+- [x] Implement an on-device visual before/after JPEG preview tied to the active quality setting.
+- [x] Persist JPEG quality and advanced cleanup preferences only in browser local storage, with a clear reset path.
+- [x] Detect and remove XMP metadata where supported, then show its state in the comparison and privacy summary.
+- [x] Verify visual preview refresh, preference restoration/reset, XMP-clean output, mobile controls, tests, and production build.

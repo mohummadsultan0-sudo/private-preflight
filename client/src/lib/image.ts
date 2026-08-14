@@ -14,6 +14,7 @@ export const DEFAULT_JPEG_QUALITY = 90;
 export interface AncillaryMetadata {
   hasIccProfile: boolean;
   hasTextComments: boolean;
+  hasXmp: boolean;
 }
 
 export interface CleanCopyOptions {
@@ -228,14 +229,26 @@ export function readAncillaryMetadata(bytes: Uint8Array, type: SupportedImageTyp
       if (marker === 0xfe) hasTextComments = true;
       cursor += segmentLength;
     }
-    return { hasIccProfile, hasTextComments };
+    let hasXmp = false;
+    cursor = 2;
+    while (cursor + 4 <= bytes.length && bytes[cursor] === 0xff) {
+      while (bytes[cursor] === 0xff) cursor += 1;
+      const marker = bytes[cursor++];
+      if (marker === 0xd9 || marker === 0xda) break;
+      const segmentLength = (bytes[cursor] << 8) | bytes[cursor + 1];
+      if (segmentLength < 2 || cursor + segmentLength > bytes.length) break;
+      if (marker === 0xe1 && ascii(bytes, cursor + 2, 29).startsWith("http://ns.adobe.com/xap/1.0/")) hasXmp = true;
+      cursor += segmentLength;
+    }
+    return { hasIccProfile, hasTextComments, hasXmp };
   }
   if (type === "png") {
-    if (ascii(bytes, 1, 3) !== "PNG") return { hasIccProfile: false, hasTextComments: false };
+    if (ascii(bytes, 1, 3) !== "PNG") return { hasIccProfile: false, hasTextComments: false, hasXmp: false };
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let cursor = 8;
     let hasIccProfile = false;
     let hasTextComments = false;
+    let hasXmp = false;
     while (cursor + 12 <= bytes.length) {
       const length = view.getUint32(cursor, false);
       const chunkType = ascii(bytes, cursor + 4, 4);
@@ -243,11 +256,29 @@ export function readAncillaryMetadata(bytes: Uint8Array, type: SupportedImageTyp
       if (dataStart + length + 4 > bytes.length) break;
       if (chunkType === "iCCP") hasIccProfile = true;
       if (chunkType === "tEXt" || chunkType === "zTXt" || chunkType === "iTXt") hasTextComments = true;
+      if (chunkType === "iTXt" && ascii(bytes, dataStart, 18) === "XML:com.adobe.xmp") hasXmp = true;
       cursor = dataStart + length + 4;
     }
-    return { hasIccProfile, hasTextComments };
+    return { hasIccProfile, hasTextComments, hasXmp };
   }
-  return { hasIccProfile: false, hasTextComments: false };
+  if (type === "webp") {
+    if (ascii(bytes, 0, 4) !== "RIFF" || ascii(bytes, 8, 4) !== "WEBP") return { hasIccProfile: false, hasTextComments: false, hasXmp: false };
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let cursor = 12;
+    let hasIccProfile = false;
+    let hasXmp = false;
+    while (cursor + 8 <= bytes.length) {
+      const chunkType = ascii(bytes, cursor, 4);
+      const length = view.getUint32(cursor + 4, true);
+      const dataStart = cursor + 8;
+      if (dataStart + length > bytes.length) break;
+      if (chunkType === "ICCP") hasIccProfile = true;
+      if (chunkType === "XMP ") hasXmp = true;
+      cursor = dataStart + length + (length % 2);
+    }
+    return { hasIccProfile, hasTextComments: false, hasXmp };
+  }
+  return { hasIccProfile: false, hasTextComments: false, hasXmp: false };
 }
 
 export function extractExif(bytes: Uint8Array, type: SupportedImageType): { exif: ImageExif; state: ImageMetadataState; notice?: string } {
@@ -374,7 +405,8 @@ async function stripJpegAncillarySegments(blob: Blob): Promise<Blob> {
     if (segmentLength < 2 || cursor + segmentLength > bytes.length) break;
     const payloadStart = cursor + 2;
     const isIcc = marker === 0xe2 && ascii(bytes, payloadStart, 12) === "ICC_PROFILE";
-    if (!isIcc && marker !== 0xfe) kept.push(bytes.slice(start, cursor + segmentLength));
+    const isXmp = marker === 0xe1 && ascii(bytes, payloadStart, 29).startsWith("http://ns.adobe.com/xap/1.0/");
+    if (!isIcc && !isXmp && marker !== 0xfe) kept.push(bytes.slice(start, cursor + segmentLength));
     cursor += segmentLength;
   }
   return new Blob(kept, { type: CLEAN_COPY_MIME.jpeg });

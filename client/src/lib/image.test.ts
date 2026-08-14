@@ -14,10 +14,12 @@ function withExifTiff(): Uint8Array {
 }
 
 function jpegWithAncillarySegments(): Uint8Array {
+  const xmp = new TextEncoder().encode("http://ns.adobe.com/xap/1.0/\0");
   return new Uint8Array([
     0xff, 0xd8,
     0xff, 0xe2, 0x00, 0x0e, 0x49, 0x43, 0x43, 0x5f, 0x50, 0x52, 0x4f, 0x46, 0x49, 0x4c, 0x45, 0x00,
     0xff, 0xfe, 0x00, 0x04, 0x6e, 0x6f,
+    0xff, 0xe1, 0x00, xmp.length + 2, ...xmp,
     0xff, 0xd9,
   ]);
 }
@@ -53,6 +55,6 @@ describe("local image metadata", () => {
     expect(clampJpegQuality(1)).toBe(JPEG_QUALITY_MIN);
     expect(clampJpegQuality(100)).toBe(JPEG_QUALITY_MAX);
     expect(clampJpegQuality(82.6)).toBe(83);
-    expect(readAncillaryMetadata(jpegWithAncillarySegments(), "jpeg")).toEqual({ hasIccProfile: true, hasTextComments: true });
+    expect(readAncillaryMetadata(jpegWithAncillarySegments(), "jpeg")).toEqual({ hasIccProfile: true, hasTextComments: true, hasXmp: true });
   });
 });

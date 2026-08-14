@@ -110,6 +110,28 @@ The initial structural check revealed that the browser JPEG encoder had retained
 
 The structural verification passed for the revised 345 B, 64 × 96 JPEG: the application parser reported no EXIF, no ICC profile, and no textual comment segment. The phone and desktop empty-state layouts remained vertically balanced after the controls were added; the rich controls appear only after a local image is inspected.
 
+## Visual JPEG preview, browser preferences, and XMP
+
+For a selected JPEG, the clean-copy control renders two small local previews: the decoded source and the JPEG encoded at the active quality. The preview is a decision aid, not an authoritative colour-management or pixel-for-pixel proof. It is recreated after the quality control pauses briefly, uses browser object URLs, and is revoked on replacement or component disposal. PNG does not show a lossy-quality comparison because it has no JPEG quality setting.
+
+Only non-sensitive settings are stored in browser `localStorage`: JPEG quality and whether the advanced cleanup disclosure is open. No file name, image bytes, preview, EXIF value, ICC profile, comment, XMP block, or inspection result is stored. A `Reset saved settings` action clears those preferences and returns the quality to 90 and the advanced disclosure to its collapsed state.
+
+XMP is detected in JPEG APP1 XMP packets, PNG XMP textual chunks, and WebP XMP chunks. PNG and WebP clean outputs discard it through re-encoding; clean JPEG removes XMP APP1 packets explicitly alongside EXIF, ICC, and comments. The comparison ledger and privacy summary report XMP as **Removed** when present. The tool does not interpret XMP contents or claim to identify every proprietary metadata carrier.
+
+An EXIF-bearing JPEG with an APP1 XMP packet was dispatched through the real image drop path. The browser preference record contained only the default quality `90` and `advancedOpen: false`, confirming that no image or metadata payload was persisted before the visual review.
+
+The completed result detected XMP, marked it for removal in the comparison, and included its state in the privacy summary. It rendered both local previews side-by-side at quality 90 and estimated 376 B. Moving the real range control changed the active quality to 68, regenerated the clean preview, updated the estimate to 345 B, and updated the privacy summary to the same setting.
+
+After that change, browser storage held exactly `{ "quality": 68, "advancedOpen": false }`. Reopening the route cleared the inspected image and both previews while retaining that small preference record, as intended.
+
+Loading a new local XMP-bearing JPEG after reopening restored quality 68 automatically. The result again showed the original/clean quality previews, an XMP removal row, a 352 B local estimate, and no carried-over source image from the earlier inspection.
+
+The first automated interaction with the reset control did not alter the stored quality value, so the reset event requires a direct retry and state check before this scenario can be marked passed.
+
+Direct activation of the reset action restored quality 90 and the storage record `{ "quality": 90, "advancedOpen": false }`. A subsequent clean JPEG download from the XMP-bearing input completed successfully with a 366 B local estimate; the next structural check verifies removal from the output container.
+
+The structural check passed for the 366 B, 80 × 40 clean JPEG: the application parser reported no EXIF, ICC, comments, or XMP. The complete suite now passes 11 deterministic tests, TypeScript validation, and the production build. Empty-state screenshots at 1280 px and 390 px confirm the unchanged workbench remains balanced with no horizontal clipping; the active result’s preview controls are intentionally created only after local inspection.
+
 An empty, declared-JPEG file was dispatched next through the same drop surface. The following visual check verifies the dedicated empty-file recovery state.
 
 The empty-file check rendered its own recovery message, instructing the user to choose a non-empty image and retaining the no-upload, no-storage, and no-send assurance.
