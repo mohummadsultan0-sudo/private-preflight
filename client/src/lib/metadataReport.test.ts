@@ -41,4 +41,18 @@ describe("local metadata reports", () => {
     expect(csv).not.toContain("Canon");
     expect(csv).not.toContain("2026:08:14");
   });
+
+  it("reports JPEG quality per batch item and marks PNG quality as not applicable", () => {
+    const csv = createCombinedBatchCsv([
+      { itemId: "image-01", inspection, options: { ...options, jpegQuality: 61 } },
+      { itemId: "image-02", inspection: { ...inspection, format: "png", mimeType: "image/png" }, options: { ...options, cleanFormat: "png", jpegQuality: 78 } },
+    ], ["selected_format", "jpeg_quality"]);
+    expect(csv.split("\r\n")).toEqual([
+      "item_id,section,field,value,clean_copy_effect",
+      "image-01,clean_copy,selected_format,jpeg,not-applicable",
+      "image-01,clean_copy,jpeg_quality,61,not-applicable",
+      "image-02,clean_copy,selected_format,png,not-applicable",
+      "image-02,clean_copy,jpeg_quality,not-applicable,not-applicable",
+    ]);
+  });
 });

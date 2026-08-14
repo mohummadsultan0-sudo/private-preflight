@@ -83,3 +83,11 @@
 - [x] Implement accessible per-file ZIP progress states during clean-copy creation and archive finalization.
 - [x] Implement a combined, privacy-safe batch CSV report download.
 - [x] Verify mixed output contracts, progress completion and recovery paths, combined CSV rows, mobile controls, 14 deterministic tests, TypeScript, and production build.
+
+## Batch field selection, item removal, and JPEG quality
+
+- [x] Define privacy-safe combined CSV field selection, per-item removal behavior, and JPEG quality bounds for batch outputs.
+- [x] Implement a combined CSV field picker in the batch interface and preserve those selected fields in the standalone CSV and ZIP report.
+- [x] Implement an accessible remove action for each queue item before bundle creation, with queue limits and eligibility recalculated locally.
+- [x] Implement an independent 40–95 JPEG quality control per eligible batch item, ignored for PNG output and applied to all matching reports and clean copies.
+- [x] Verify field-filtering and per-item quality report contracts, removal-state safeguards, responsive styles, 15 deterministic tests, TypeScript, and production build.

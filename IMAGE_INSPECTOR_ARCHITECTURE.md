@@ -168,6 +168,14 @@ ZIP creation reports a local `Preparing`, `Cleaning`, `Writing reports`, or `Com
 
 The optional combined CSV is one UTF-8-with-BOM spreadsheet file with an `item_id` column and the same safe fields used by individual reports. Its item IDs are ordinal identifiers, not source file names. It excludes original names, raw bytes, preview URLs, raw EXIF/XMP values, camera values, capture time, coordinates, and user identifiers.
 
+## Batch field selection, removal, and per-item JPEG quality
+
+The batch interface exposes the same predefined, privacy-safe field list for its **combined CSV**. All safe fields are selected initially; users may choose a narrower set, but the interface prevents a zero-field export. That selection controls the standalone combined download and the `reports/batch-metadata.csv` file inside the ZIP. It never enables source names, raw file sizes, image bytes, previews, EXIF/XMP contents, camera values, capture time, coordinates, or identifiers.
+
+Every queue row has an accessible remove action until bundle creation begins. Removing an item removes only its local in-memory queue reference; it does not delete or modify the source file. The item count, combined-byte limit, eligible count, ordinal bundle IDs, progress total, and combined report rows are recalculated from the remaining queue. All queue controls are locked while ZIP creation is active.
+
+Each eligible JPEG selection has an independent quality range of **40–95**, defaulting to **90**. The quality is used for that item's clean JPEG encoding and its JSON, individual CSV, and combined CSV evidence rows. Switching an item to PNG hides and disables its JPEG-quality control; PNG remains lossless for visible pixels and its report records no JPEG quality. Quality choices are held only in component memory for the active queue and are not saved to browser preferences.
+
 A local EXIF-bearing 64 × 32 JPEG has completed through the normal drop path. The `Download CSV report` action is present in the resulting local evidence area, ready for file-level verification.
 
 The spreadsheet evidence panel rendered beside the JSON report with its explicit exclusions. The CSV download completed locally and displayed a confirmation message; the next check validates its headers, rows, spreadsheet-safe formatting, and privacy exclusions.
