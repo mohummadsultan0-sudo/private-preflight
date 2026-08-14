@@ -296,8 +296,9 @@ export function supportedImageType(file: Pick<File, "name" | "type">): Supported
   return EXTENSION_TO_TYPE[extension] ?? null;
 }
 
-export function canCreateCleanCopy(format: SupportedImageType, metadataState: ImageMetadataState): boolean {
-  return format !== "gif" && metadataState !== "none";
+export function canCreateCleanCopy(format: SupportedImageType, metadataState: ImageMetadataState, ancillaryMetadata?: AncillaryMetadata): boolean {
+  const hasRemovableAncillaryMetadata = Boolean(ancillaryMetadata?.hasIccProfile || ancillaryMetadata?.hasTextComments || ancillaryMetadata?.hasXmp);
+  return format !== "gif" && (metadataState !== "none" || hasRemovableAncillaryMetadata);
 }
 
 export function clampJpegQuality(value: number): number {

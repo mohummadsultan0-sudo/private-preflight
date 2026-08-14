@@ -1,14 +1,16 @@
 /** Audit Ledger style: all product pages share a calm, evidence-first shell rather than generic marketing chrome. */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import { Guide } from "./pages/Guide";
-import ImageInspectorPage from "./pages/ImageInspector";
-import Privacy from "./pages/Privacy";
+
+const ImageInspectorPage = lazy(() => import("./pages/ImageInspector"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const Guide = lazy(async () => ({ default: (await import("./pages/Guide")).Guide }));
 
 
 function Router() {
@@ -42,7 +44,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Suspense fallback={<div className="route-loading" role="status" aria-live="polite">Opening local inspection workspace…</div>}><Router /></Suspense>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

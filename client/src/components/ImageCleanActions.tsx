@@ -80,7 +80,7 @@ export function ImageCleanActions({ sourceFile, inspection }: { sourceFile: File
   const [copyError, setCopyError] = useState<string | null>(null);
   const [reportStage, setReportStage] = useState<ReportStage>("idle");
   const [reportError, setReportError] = useState<string | null>(null);
-  const canDownload = Boolean(sourceFile && canCreateCleanCopy(inspection.format, inspection.metadataState));
+  const canDownload = Boolean(sourceFile && canCreateCleanCopy(inspection.format, inspection.metadataState, inspection.ancillaryMetadata));
 
   useEffect(() => { try { localStorage.setItem(PREFERENCE_KEY, JSON.stringify({ quality: jpegQuality, advancedOpen, jpegMode })); } catch { /* Optional local settings never block the tool. */ } }, [jpegQuality, advancedOpen, jpegMode]);
   useEffect(() => { if (!sourceFile) { setSourcePreviewUrl(null); return; } const url = URL.createObjectURL(sourceFile); setSourcePreviewUrl(url); return () => URL.revokeObjectURL(url); }, [sourceFile]);

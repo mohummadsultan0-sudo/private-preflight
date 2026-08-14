@@ -190,7 +190,7 @@ export function CsvWorkspace() {
       <div className="workspace__masthead">
         <div>
           <div className="eyebrow"><span>CSV PREFLIGHT / 01</span> Browser-only file checkpoint</div>
-          <h1 id="tool-heading">Inspect the file before the spreadsheet interprets it.</h1>
+          <h1 id="tool-heading">Inspect before the spreadsheet interprets it.</h1>
           <p className="lede">Structure, duplicate, formula-risk and potential PII checks run in this browser tab. The application never uploads your CSV.</p>
         </div>
         <div className="local-seal" aria-label="Local-only processing">
@@ -217,7 +217,7 @@ export function CsvWorkspace() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (localSupported) chooseFile(event.dataTransfer.files?.[0]); }}
           >
-            <div className="dropzone__index">FILE / 01</div>
+            <div className="dropzone__index"><span>ACTIVE WORKBENCH</span><strong>FILE / 01</strong></div>
             {rejectedFile ? (
               <div className="decision-card decision-card--inline" ref={decisionRef} tabIndex={-1} role="alert">
                 <div className="decision-card__glyph"><FileWarning aria-hidden="true" /></div>

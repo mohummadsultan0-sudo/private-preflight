@@ -31,7 +31,7 @@ type BatchReportEntry = { itemId: string; inspection: ImageInspection; options: 
 
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 const safeItemId = (index: number) => `image-${String(index + 1).padStart(2, "0")}`;
-const isCleanEligible = (item: BatchItem) => item.status === "ready" && Boolean(item.inspection) && canCreateCleanCopy(item.inspection!.format, item.inspection!.metadataState);
+const isCleanEligible = (item: BatchItem) => item.status === "ready" && Boolean(item.inspection) && canCreateCleanCopy(item.inspection!.format, item.inspection!.metadataState, item.inspection!.ancillaryMetadata);
 const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, estimatedBytes: null, cleanCopyOffered: true });
 const toSessionItem = (item: BatchItem): SessionBatchItem | null => {
   if (item.status === "reading") return null;

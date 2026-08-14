@@ -105,3 +105,12 @@
 - [x] Implement session-scoped queue restoration that keeps local files and their queue settings only in the browser, never in a network, account, analytics event, or server store.
 - [x] Show each eligible item’s final `image-##` ZIP output ordinal before bundle creation and refresh it on any reorder or removal.
 - [x] Verify move-control and ZIP-plan contracts, session-vault recovery safeguards, mixed eligibility, mobile-safe styles, 18 deterministic tests, TypeScript, and production build.
+
+## Production quality, resilience, and advertising review
+
+- [x] Define user-journey, failure-mode, privacy, accessibility, production, capacity, and advertising acceptance criteria.
+- [x] Audit client-side file-processing paths, error boundaries, state restoration, dependency health, deterministic tests, and production build.
+- [x] Exercise core CSV and image user journeys, unsupported and boundary files, batch recovery, refresh behavior, keyboard controls, and phone layouts.
+- [x] Measure representative deployed static-page responses and document what browser-only processing and autoscaled static hosting can and cannot guarantee under concurrent traffic.
+- [x] Document ad placements that remain outside all file-selection, inspection, evidence, download, and error-recovery flows.
+- [x] Implement and verify priority fixes: ancillary-only image cleaning, production-only source-location exclusion, route splitting, dependency remediation, and workbench-first hierarchy; publish the readiness report with known limits and follow-up actions.

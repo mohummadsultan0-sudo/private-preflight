@@ -45,7 +45,10 @@ describe("local image metadata", () => {
     expect(canCreateCleanCopy("jpeg", "available")).toBe(true);
     expect(canCreateCleanCopy("webp", "unreadable")).toBe(true);
     expect(canCreateCleanCopy("png", "none")).toBe(false);
+    expect(canCreateCleanCopy("jpeg", "none", { hasIccProfile: true, hasTextComments: false, hasXmp: false })).toBe(true);
+    expect(canCreateCleanCopy("png", "none", { hasIccProfile: false, hasTextComments: true, hasXmp: false })).toBe(true);
     expect(canCreateCleanCopy("gif", "available")).toBe(false);
+    expect(canCreateCleanCopy("gif", "none", { hasIccProfile: true, hasTextComments: true, hasXmp: true })).toBe(false);
     expect(cleanCopyFileName("holiday.photo.JPG")).toBe("holiday.photo-clean.png");
     expect(cleanCopyFileName("holiday.photo.JPG", "jpeg")).toBe("holiday.photo-clean.jpg");
     expect(CLEAN_JPEG_QUALITY).toBe(0.9);
