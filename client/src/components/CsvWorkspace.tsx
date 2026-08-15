@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuditTrail } from "@/components/AuditTrail";
+import { LedgerArt, LocalSeal } from "@/components/LocalVisuals";
 import { Link } from "wouter";
 import {
   analyzeFile,
@@ -194,10 +195,7 @@ export function CsvWorkspace() {
           <h1 id="tool-heading">Inspect before the spreadsheet interprets it.</h1>
           <p className="lede">Structure, duplicate, formula-risk and potential PII checks run in this browser tab. The application never uploads your CSV.</p>
         </div>
-        <div className="local-seal" aria-label="Local-only processing">
-          <img src="/manus-storage/private-csv-preflight-local-seal_34c78c7d.jpg" alt="" />
-          <div><strong>LOCAL ONLY</strong><span>File stays in this tab</span></div>
-        </div>
+        <LocalSeal detail="File stays in this tab" />
       </div>
 
       <div className="inspection-frame">
@@ -305,7 +303,7 @@ export function CsvWorkspace() {
                   </div>
                 </div>
                 <aside className="overview-side">
-                  <img src="/manus-storage/private-csv-preflight-ledger-hero_fc1a22c7.jpg" alt="" />
+                  <LedgerArt className="ledger-art--compact" />
                   <div><span>HOW TO READ THIS</span><h3>Signals are evidence, not verdicts.</h3><p>For example, a phone number beginning with “+” can look like a spreadsheet formula. Review the listed field before changing data.</p></div>
                 </aside>
               </div>

@@ -21,11 +21,13 @@ pnpm build
 
 The `main` branch runs `.github/workflows/deploy-pages.yml`. The workflow builds the static client with the `/private-preflight/` base path and publishes `dist/public` to GitHub Pages. `404.html` mirrors `index.html` so direct links to the browser routes remain available.
 
-The current Pages address is expected to be:
+The source is published in the public repository [mohummadsultan0-sudo/private-preflight](https://github.com/mohummadsultan0-sudo/private-preflight). The deployed Pages address is:
 
 ```text
-https://aldar000405-a11y.github.io/private-preflight/
+https://mohummadsultan0-sudo.github.io/private-preflight/
 ```
+
+The Pages build is self-contained: the brand mark, local-only seal, ledger artwork, and favicon are all CSS/SVG-native application assets, so the published site does not depend on `/manus-storage/`.
 
 ## License
 

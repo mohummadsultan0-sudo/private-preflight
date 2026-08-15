@@ -25,7 +25,7 @@
 .image-local-seal { position:relative; align-self:center; min-width:212px; padding:9px 13px 9px 16px; border:1px dashed #a79c8d; border-left:3px solid #e65a2e; background:#faf8f2; box-shadow:3px 3px 0 #e4ddd2; }
 .image-local-seal::before { content:"[  ]"; position:absolute; top:7px; right:10px; color:#b54a2b; font:700 10px/1 "DM Mono",monospace; letter-spacing:.1em; }
 .image-local-seal strong { letter-spacing:.12em; }
-.image-local-seal img { mix-blend-mode:multiply; }
+.image-local-seal .local-seal__glyph { width:36px; height:36px; padding:7px; mix-blend-mode:multiply; }
 .image-dropzone { background:#faf8f2; box-shadow:7px 7px 0 #e4ddd2; }
 .image-dropzone:before { border-color:#cbc3b7; }
 .image-dropzone--dragging { border-color:#e65a2e; box-shadow:10px 10px 0 #f0c2b0; }

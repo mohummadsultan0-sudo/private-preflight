@@ -131,7 +131,11 @@
 
 ## GitHub code export and GitHub Pages
 
-- [ ] Confirm the GitHub account, the user-approved public repository visibility, Pages URL preference, and compatibility boundaries with the current static project.
-- [ ] Prepare a GitHub Pages build and deployment workflow without altering the existing Manus deployment.
-- [ ] Create or connect the repository, push the source code, enable Pages, and verify the Pages URL if account authorization is available.
-- [ ] Document the repository, Pages URL, and any remaining account or DNS steps.
+- [x] Confirm the GitHub account, the user-approved public repository visibility, Pages URL preference, and compatibility boundaries with the current static project.
+- [x] Prepare a GitHub Pages build and deployment workflow without altering the existing Manus deployment.
+- [x] Create or connect the repository, push the source code, enable Pages, and verify the Pages URL if account authorization is available.
+- [x] Document the repository, Pages URL, and any remaining account or DNS steps.
+
+### GitHub Pages standalone asset verification
+
+- [x] Replace Manus-hosted visual assets with CSS-native brand, seal, and ledger-art components; add a local vector favicon; and verify the GitHub Pages build has no `/manus-storage/` dependencies.

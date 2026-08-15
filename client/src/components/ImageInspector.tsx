@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Camera, FileImage, ImageIcon, LockKeyhole, MapPin, RotateCcw, ScanLine, ShieldCheck, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuditTrail } from "@/components/AuditTrail";
+import { LocalSeal } from "@/components/LocalVisuals";
 import { ImageCleanActions } from "@/components/ImageCleanActions";
 import { BatchImageProcessor } from "@/components/BatchImageProcessor";
 import { ImageInspection, ImageInspectionError, inspectImageFile, MAX_IMAGE_BYTES, supportedImageType } from "@/lib/image";
@@ -84,7 +85,7 @@ export function ImageInspector() {
           <h1 id="image-tool-title">Image facts, before sharing.</h1>
           <p>Add → inspect → review → decide. Read local file facts and available EXIF without moving the image from this browser tab.</p>
         </div>
-        <div className="local-seal image-local-seal" aria-label="Local-only image processing"><img src="/manus-storage/private-csv-preflight-local-seal_34c78c7d.jpg" alt="" /><div><strong>LOCAL ONLY</strong><span>Image stays in this tab</span></div></div>
+        <LocalSeal className="image-local-seal" detail="Image stays in this tab" />
       </div>
 
       <div className="inspection-frame image-inspection-frame">

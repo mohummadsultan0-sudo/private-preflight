@@ -5,7 +5,7 @@ type BrandMarkProps = { compact?: boolean; className?: string };
 export function BrandMark({ compact = false, className = "" }: BrandMarkProps) {
   return (
     <Link href="/" className={`brand-mark ${className}`} aria-label="Private Preflight home">
-      <img src="/manus-storage/private-csv-preflight-mark_c773fe6a.png" alt="" className="brand-mark__icon" />
+      <span className="brand-mark__icon" aria-hidden="true" />
       {!compact && (
         <span className="brand-mark__name">
           private <strong>preflight</strong>
