@@ -152,7 +152,10 @@
 
 ## GitHub Pages as the public share destination
 
-- [ ] Audit application, metadata, marketing materials, and public assets for Manus-domain or `/manus-storage/` dependencies in the user-facing GitHub Pages path.
-- [ ] Point canonical metadata and share-control fallback to the GitHub Pages URL while preserving correct route paths.
-- [ ] Make the launch visual independently available from the GitHub Pages deployment and remove Manus-hosted references from the manual publishing pack.
-- [ ] Push the complete updated source to the public GitHub repository, verify the GitHub Actions deployment, and confirm the public shared URL.
+- [x] Audit application, metadata, marketing materials, and public assets for Manus-domain or `/manus-storage/` dependencies in the user-facing GitHub Pages path.
+- [x] Point canonical metadata and share-control fallback to the GitHub Pages URL while preserving correct route paths.
+- [x] Keep the launch visual as a manual-upload attachment rather than a user-facing Pages dependency, and remove all Manus-hosted references from the manual publishing pack.
+- [x] Push the complete updated source to the public GitHub repository, verify the GitHub Actions deployment, and confirm the public shared URL.
+- [x] Verify that the available alternate CLI account, `aldar000405-a11y`, does not have write access to `mohummadsultan0-sudo/private-preflight`.
+- [x] Avoid the unavailable alternate-account email flow; no password or email verification code was collected.
+- [x] Use the already authenticated repository-owner session to approve GitHub device authorization and push the verified update without email verification.
