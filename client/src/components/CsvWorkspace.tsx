@@ -240,6 +240,7 @@ export function CsvWorkspace() {
                 <div className="dropzone__icon"><FileUp aria-hidden="true" /></div>
                 <h2>Drop a CSV here</h2>
                 <p>or choose a local <code>.csv</code>, <code>.tsv</code>, or <code>.txt</code> export</p>
+                <p className="dropzone__helper"><strong>New here?</strong> Choose a file you are about to open or share. Prefer a quick tour? Start with the safe demo.</p>
                 <div className="dropzone__actions">
                   <Button className="action-button" disabled={!localSupported} onClick={() => inputRef.current?.click()}><Upload aria-hidden="true" /> Choose file</Button>
                   <Button variant="ghost" className="quiet-button" disabled={!localSupported} onClick={useDemo}>Try a safe demo <ArrowRight aria-hidden="true" /></Button>

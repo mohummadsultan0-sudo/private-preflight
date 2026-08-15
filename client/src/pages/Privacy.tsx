@@ -3,6 +3,7 @@ import { ArrowLeft, FileKey2, LockKeyhole, Network, RadioTower, ScanLine, Shield
 import { Link } from "wouter";
 import { BrandMark } from "@/components/BrandMark";
 import { LocalSeal } from "@/components/LocalVisuals";
+import { SharePreflight } from "@/components/SharePreflight";
 
 const boundaries = [
   { icon: FileKey2, title: "Selected local file", text: "The app reads a CSV or supported image through your browser’s local file APIs. The application does not send its contents or name to an analysis endpoint." },
@@ -15,7 +16,7 @@ const boundaries = [
 export default function Privacy() {
   return (
     <div className="site-shell privacy-shell">
-      <header className="site-header"><div className="site-header__inner"><BrandMark /><Link className="header-action" href="/"><ArrowLeft aria-hidden="true" /> Return to preflight</Link></div></header>
+      <header className="site-header"><div className="site-header__inner"><BrandMark /><div className="header-actions"><SharePreflight surface="privacy" /><Link className="header-action" href="/"><ArrowLeft aria-hidden="true" /> Return to preflight</Link></div></div></header>
       <main className="privacy-main">
         <section className="privacy-hero"><div><span className="eyebrow"><span>PRIVACY / 01</span> Designed for a short data path</span><h1>Your file should not need a destination to be inspected.</h1><p>Private Preflight is designed as a browser-only inspection suite. Its central product decision is that CSV and supported-image inspection do not require a product API, account, or file store.</p></div><LocalSeal className="privacy-seal" detail="Browser memory during inspection" /></section>
         <section className="boundary-grid">{boundaries.map((boundary, index) => { const Icon = boundary.icon; return <article key={boundary.title}><span>{String(index + 1).padStart(2, "0")}</span><Icon aria-hidden="true" /><h2>{boundary.title}</h2><p>{boundary.text}</p></article>; })}</section>

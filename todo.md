@@ -139,3 +139,13 @@
 ### GitHub Pages standalone asset verification
 
 - [x] Replace Manus-hosted visual assets with CSS-native brand, seal, and ledger-art components; add a local vector favicon; and verify the GitHub Pages build has no `/manus-storage/` dependencies.
+
+## Launch marketing, sharing, and first-use clarity
+
+- [ ] Inspect the available publishing channels and define a responsible, audience-specific launch scope.
+- [ ] Research high-intent audiences, communities, search topics, and competitive positioning for browser-local CSV and image privacy workflows.
+- [x] Add an accessible share control with native mobile sharing, clipboard fallback, a public-link fallback in managed previews, and clear privacy-preserving copy.
+- [x] Improve first-use guidance and recovery cues for visitors who have never used a CSV or image metadata tool.
+- [x] Validate the revised desktop and mobile experience; 18 deterministic tests, TypeScript, and the production build pass.
+- [ ] Save and publish the website checkpoint for the sharing and first-use UX release.
+- [ ] Prepare channel-specific launch messages and publish only to the user-approved available accounts after explicit confirmation.
