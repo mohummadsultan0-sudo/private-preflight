@@ -142,10 +142,18 @@
 
 ## Launch marketing, sharing, and first-use clarity
 
-- [ ] Inspect the available publishing channels and define a responsible, audience-specific launch scope.
-- [ ] Research high-intent audiences, communities, search topics, and competitive positioning for browser-local CSV and image privacy workflows.
+- [x] Inspect the available publishing channels and define a responsible, audience-specific launch scope; Instagram requires a separately authenticated account.
+- [x] Research high-intent audiences, communities, search topics, and competitive positioning for browser-local CSV and image privacy workflows.
 - [x] Add an accessible share control with native mobile sharing, clipboard fallback, a public-link fallback in managed previews, and clear privacy-preserving copy.
 - [x] Improve first-use guidance and recovery cues for visitors who have never used a CSV or image metadata tool.
 - [x] Validate the revised desktop and mobile experience; 18 deterministic tests, TypeScript, and the production build pass.
-- [ ] Save and publish the website checkpoint for the sharing and first-use UX release.
-- [ ] Prepare channel-specific launch messages and publish only to the user-approved available accounts after explicit confirmation.
+- [x] Save and publish the website checkpoint for the sharing and first-use UX release.
+- [x] Prepare channel-specific launch messages and a 3:4 launch visual for manual publishing; direct account publishing is deferred because the user cannot sign in.
+- [x] Deliver the complete copy-and-publish pack, campaign schedule, and measurement checklist for manual use.
+
+## GitHub Pages as the public share destination
+
+- [ ] Audit application, metadata, marketing materials, and public assets for Manus-domain or `/manus-storage/` dependencies in the user-facing GitHub Pages path.
+- [ ] Point canonical metadata and share-control fallback to the GitHub Pages URL while preserving correct route paths.
+- [ ] Make the launch visual independently available from the GitHub Pages deployment and remove Manus-hosted references from the manual publishing pack.
+- [ ] Push the complete updated source to the public GitHub repository, verify the GitHub Actions deployment, and confirm the public shared URL.

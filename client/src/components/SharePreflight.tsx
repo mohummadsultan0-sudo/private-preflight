@@ -19,6 +19,17 @@ const shareCopy: Record<ShareSurface, { text: string; label: string }> = {
   },
 };
 
+const PUBLIC_PAGES_URL = "https://mohummadsultan0-sudo.github.io/private-preflight/";
+
+function publicShareUrl() {
+  const pagesBase = "/private-preflight";
+  const currentPath = window.location.pathname;
+  const appPath = currentPath.startsWith(pagesBase) ? currentPath.slice(pagesBase.length) || "/" : currentPath;
+  const url = new URL(appPath === "/" ? "" : appPath.replace(/^\//, ""), PUBLIC_PAGES_URL);
+  url.search = window.location.search;
+  return url.toString();
+}
+
 export function SharePreflight({ surface, className = "" }: { surface: ShareSurface; className?: string }) {
   const [feedback, setFeedback] = useState("");
   const [copied, setCopied] = useState(false);
@@ -54,10 +65,7 @@ export function SharePreflight({ surface, className = "" }: { surface: ShareSurf
   };
 
   const share = async () => {
-    const isManagedPreview = window.location.hostname.endsWith("manus.computer");
-    const url = isManagedPreview
-      ? new URL(window.location.pathname, "https://csvcheck-fj8jo5gq.manus.space").toString()
-      : window.location.href;
+    const url = publicShareUrl();
     setFeedback("");
 
     if (hasNativeShare) {

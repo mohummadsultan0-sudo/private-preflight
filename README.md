@@ -27,7 +27,7 @@ The source is published in the public repository [mohummadsultan0-sudo/private-p
 https://mohummadsultan0-sudo.github.io/private-preflight/
 ```
 
-The Pages build is self-contained: the brand mark, local-only seal, ledger artwork, and favicon are all CSS/SVG-native application assets, so the published site does not depend on `/manus-storage/`.
+The Pages build is self-contained: the brand mark, local-only seal, ledger artwork, and favicon are all CSS/SVG-native application assets, so the published site does not depend on an external asset host.
 
 ## License
 
