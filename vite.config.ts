@@ -203,8 +203,17 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), ...(mode === "development" ? [jsxLocPlugin()] : []), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()],
+export default defineConfig(({ mode }) => {
+  const isGitHubPages = mode === "github-pages";
+
+  return {
+  base: isGitHubPages ? "/private-preflight/" : "/",
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(mode === "development" ? [jsxLocPlugin()] : []),
+    ...(isGitHubPages ? [] : [vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()]),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -236,4 +245,5 @@ export default defineConfig(({ mode }) => ({
       deny: ["**/.*"],
     },
   },
-}));
+};
+});

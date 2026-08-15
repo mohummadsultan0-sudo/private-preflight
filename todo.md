@@ -114,3 +114,24 @@
 - [x] Measure representative deployed static-page responses and document what browser-only processing and autoscaled static hosting can and cannot guarantee under concurrent traffic.
 - [x] Document ad placements that remain outside all file-selection, inspection, evidence, download, and error-recovery flows.
 - [x] Implement and verify priority fixes: ancillary-only image cleaning, production-only source-location exclusion, route splitting, dependency remediation, and workbench-first hierarchy; publish the readiness report with known limits and follow-up actions.
+
+## Launch, audience, competition, and ad-revenue assessment
+
+- [x] Define the distinction between verified functional readiness, production-risk limits, market demand, differentiation, and commercial viability.
+- [x] Reconcile the latest technical audit with the actual published product and state any non-guarantees plainly.
+- [x] Research current privacy-first image/CSV tools, AI substitutes, target jobs, and evidence of user demand using primary or authoritative sources.
+- [x] Evaluate whether programmatic advertising can be a viable model under realistic traffic and policy constraints, without fabricating revenue projections.
+- [x] Deliver an evidence-based launch judgement, positioning, target audience, risks, and a prioritized action plan.
+
+## Privacy-aligned monetization options
+
+- [x] Define commercial options that do not require uploading customer files or profiling file contents.
+- [x] Compare privacy fit, buyer, technical complexity, risk, and validation path for each non-advertising revenue model.
+- [x] Prioritize a small set of experiments that preserve the free local core and avoid unverified revenue promises.
+
+## GitHub code export and GitHub Pages
+
+- [ ] Confirm the GitHub account, the user-approved public repository visibility, Pages URL preference, and compatibility boundaries with the current static project.
+- [ ] Prepare a GitHub Pages build and deployment workflow without altering the existing Manus deployment.
+- [ ] Create or connect the repository, push the source code, enable Pages, and verify the Pages URL if account authorization is available.
+- [ ] Document the repository, Pages URL, and any remaining account or DNS steps.

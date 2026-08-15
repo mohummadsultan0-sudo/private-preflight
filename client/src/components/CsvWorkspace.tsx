@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuditTrail } from "@/components/AuditTrail";
+import { Link } from "wouter";
 import {
   analyzeFile,
   CsvAnalysis,
@@ -359,7 +360,7 @@ export function CsvWorkspace() {
         <span>OPERATING NOTE / 05</span>
         <p>Advertising is not active. If added later, it remains outside the inspection path and never receives selected-file state.</p>
       </div>
-      <p id="privacy-note" className="tool-disclaimer"><ShieldCheck aria-hidden="true" /> This tool reports local signals, not compliance, safety, or security guarantees. <a href="/privacy">Read how local processing works.</a></p>
+      <p id="privacy-note" className="tool-disclaimer"><ShieldCheck aria-hidden="true" /> This tool reports local signals, not compliance, safety, or security guarantees. <Link href="/privacy">Read how local processing works.</Link></p>
     </section>
   );
 }

@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
-import { Route, Switch } from "wouter";
+import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -13,7 +13,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const Guide = lazy(async () => ({ default: (await import("./pages/Guide")).Guide }));
 
 
-function Router() {
+function AppRoutes() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -44,7 +44,9 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Suspense fallback={<div className="route-loading" role="status" aria-live="polite">Opening local inspection workspace…</div>}><Router /></Suspense>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}>
+            <Suspense fallback={<div className="route-loading" role="status" aria-live="polite">Opening local inspection workspace…</div>}><AppRoutes /></Suspense>
+          </WouterRouter>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
