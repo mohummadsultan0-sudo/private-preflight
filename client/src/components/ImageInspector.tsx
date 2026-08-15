@@ -84,7 +84,7 @@ export function ImageInspector() {
           <h1 id="image-tool-title">Image facts, before sharing.</h1>
           <p>Add → inspect → review → decide. Read local file facts and available EXIF without moving the image from this browser tab.</p>
         </div>
-        <div className="local-seal image-local-seal" aria-label="Local-only image processing"><img src="/manus-storage/private-csv-preflight-local-seal_34c78c7d.jpg" alt="" /><div><strong>LOCAL ONLY</strong><span>Image stays in this tab</span></div></div>
+        <div className="local-seal image-local-seal" aria-label="Local-only image processing"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='60' fill='%23eee7da'/%3E%3Ccircle cx='60' cy='60' r='45' fill='none' stroke='%231f5a48' stroke-width='3'/%3E%3Cpath d='M35 54h50M35 66h38M35 78h24' stroke='%2324201d' stroke-width='5'/%3E%3C/svg%3E" alt="" /><div><strong>LOCAL ONLY</strong><span>Image stays in this tab</span></div></div>
       </div>
 
       <div className="inspection-frame image-inspection-frame">
