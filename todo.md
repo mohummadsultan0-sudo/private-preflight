@@ -199,3 +199,4 @@
 - [x] Define local-only query behavior, empty-result feedback, keyboard focus, and selection persistence for large CSV header lists.
 - [x] Implement a case-insensitive quick search that filters visible column controls without altering the selected exclusion set.
 - [x] Verify deterministic filtering behavior, empty-result recovery, retained exclusions after search clearing, desktop/mobile usability, 29 tests, TypeScript, and the production build. GitHub Pages deployment remains the final release step.
+- [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
