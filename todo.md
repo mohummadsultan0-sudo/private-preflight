@@ -174,4 +174,4 @@
 - [x] Implement local image resizing for single-image and eligible batch clean-copy paths without uploading source bytes.
 - [x] Show selected output dimensions, actual local size comparison, and retain existing clear recovery messages for unsupported or failed conversions.
 - [x] Add deterministic resize/report tests; verify single-image 3200×2000 → 1280×800 preview and batch 3000×2000 → 1920×1280 ZIP output; verify phone layout; run TypeScript, 20 deterministic tests, and the GitHub Pages build.
-- [ ] Publish the update to GitHub Pages and validate that no Manus-hosted dependency is introduced.
+- [x] Publish the update to GitHub Pages and validate that no Manus-hosted dependency is introduced.
