@@ -1,6 +1,7 @@
 /** Deterministic verification for the browser-only CSV engine. */
 import { describe, expect, it } from "vitest";
-import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, parseDelimited } from "./csv";
+import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, parseDelimited, previewSafeCsvCopy } from "./csv";
+import { createSavedCsvExclusionRule, matchingCsvRuleColumns, readSavedCsvExclusionRules, writeSavedCsvExclusionRules } from "./csvExclusionRules";
 
 describe("parseDelimited", () => {
   it("keeps commas, escaped quotes, and newlines inside quoted cells", () => {
@@ -61,5 +62,24 @@ describe("analyzeText", () => {
     const safeCopy = createSafeCsvCopy(analysis, { neutralizeFormulaCells: false });
     expect(safeCopy.neutralizedCellCount).toBe(0);
     expect(safeCopy.contents).toContain("=1+1");
+  });
+
+  it("creates a bounded before-and-after preview using the same filter and formula choices as download", () => {
+    const analysis = analyzeText("name,email,notes\nAda,ada@example.com,=1+1\nGrace,grace@example.com,42\nLin,lin@example.com,43\nSam,sam@example.com,44", "fixture.csv");
+    const preview = previewSafeCsvCopy(analysis, { excludedColumns: [1], neutralizeFormulaCells: true }, 2);
+    expect(preview.sourceHeaders).toEqual(["name", "email", "notes"]);
+    expect(preview.outputHeaders).toEqual(["name", "notes"]);
+    expect(preview.sourceRows).toHaveLength(2);
+    expect(preview.outputRows).toEqual([["Ada", "\t=1+1"], ["Grace", "42"]]);
+  });
+
+  it("matches locally stored header rules without retaining CSV data or file names", () => {
+    const store = new Map<string, string>();
+    const storage = { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => { store.set(key, value); }, removeItem: (key: string) => { store.delete(key); } };
+    const rule = createSavedCsvExclusionRule("Contact fields", [" Email ", "contact_phone"], "rule-1", "2026-08-16T00:00:00.000Z");
+    expect(rule).not.toBeNull();
+    writeSavedCsvExclusionRules(storage, [rule!]);
+    expect(readSavedCsvExclusionRules(storage)).toMatchObject([{ id: "rule-1", name: "Contact fields", headers: ["email", "contact_phone"] }]);
+    expect(matchingCsvRuleColumns(["customer_id", "EMAIL", "contact_phone", "notes"], rule!)).toEqual([1, 2]);
   });
 });

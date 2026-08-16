@@ -4,7 +4,7 @@ export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 export type SupportedImageType = "jpeg" | "png" | "webp" | "gif";
 export type ImageMetadataState = "available" | "none" | "unreadable";
-export type CleanCopyFormat = "jpeg" | "png";
+export type CleanCopyFormat = "jpeg" | "png" | "webp";
 
 export const CLEAN_JPEG_QUALITY = 0.9;
 export const JPEG_QUALITY_MIN = 40;
@@ -81,6 +81,7 @@ export class ImageCleanError extends Error {
 const CLEAN_COPY_MIME: Record<CleanCopyFormat, string> = {
   jpeg: "image/jpeg",
   png: "image/png",
+  webp: "image/webp",
 };
 
 const MIME_TO_TYPE: Record<string, SupportedImageType> = {
@@ -448,7 +449,7 @@ function canvasToCleanBlob(canvas: HTMLCanvasElement, outputFormat: CleanCopyFor
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
       else reject(new ImageCleanError("clean_failed", `The browser could not encode the clean ${outputFormat.toUpperCase()} copy.`));
-    }, CLEAN_COPY_MIME[outputFormat], outputFormat === "jpeg" ? clampJpegQuality(jpegQuality) / 100 : undefined);
+    }, CLEAN_COPY_MIME[outputFormat], outputFormat === "png" ? undefined : clampJpegQuality(jpegQuality) / 100);
   });
 }
 
@@ -519,10 +520,15 @@ export function createExifFreePng(file: File): Promise<Blob> {
   return createExifFreeImage(file, "png");
 }
 
+export function cleanCopyFileExtension(outputFormat: CleanCopyFormat): "jpg" | "png" | "webp" {
+  return outputFormat === "jpeg" ? "jpg" : outputFormat;
+}
+
 export function cleanCopyFileName(fileName: string, outputFormat: CleanCopyFormat = "png", anonymize = false): string {
-  if (anonymize) return `private-preflight-image-clean.${outputFormat === "jpeg" ? "jpg" : "png"}`;
+  const extension = cleanCopyFileExtension(outputFormat);
+  if (anonymize) return `private-preflight-image-clean.${extension}`;
   const baseName = fileName.replace(/\.[^.]+$/, "") || "image";
-  return `${baseName}-clean.${outputFormat === "jpeg" ? "jpg" : "png"}`;
+  return `${baseName}-clean.${extension}`;
 }
 
 export function downloadLocalBlob(blob: Blob, fileName: string): void {

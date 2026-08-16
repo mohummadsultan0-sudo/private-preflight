@@ -12,8 +12,8 @@ export default function Home() {
       <header className="site-header">
         <div className="site-header__inner">
           <BrandMark />
-          <nav aria-label="Primary navigation"><a href="#tool">CSV preflight</a><Link href="/image-inspector">Image inspector</Link><a href="#how-it-works">How it works</a><Link href="/privacy">Privacy</Link></nav>
-          <div className="header-actions"><SharePreflight surface="csv" /><Link href="/image-inspector" className="header-action">Image inspector <ArrowUpRight aria-hidden="true" /></Link></div>
+          <nav aria-label="Primary navigation"><span className="nav-mode-label">Inspection modes</span><a href="#tool" className="nav-mode-active" aria-current="page">CSV preflight <small>active</small></a><Link href="/image-inspector" className="nav-mode-switch">Image inspector</Link><a href="#how-it-works">How it works</a><Link href="/privacy">Privacy</Link></nav>
+          <div className="header-actions"><SharePreflight surface="csv" /><Link href="/image-inspector" className="header-action header-action--switch">Switch to image <ArrowUpRight aria-hidden="true" /></Link></div>
         </div>
       </header>
       <main>

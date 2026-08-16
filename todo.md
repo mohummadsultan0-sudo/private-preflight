@@ -184,3 +184,12 @@
 - [x] Implement EXIF orientation correction through the local clean-copy canvas before metadata is removed, with a clear result disclosure.
 - [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 24 tests, TypeScript, and the GitHub Pages build.
 - [x] Publish and validate the updated GitHub Pages release without adding a server upload or Manus-hosted dependency.
+
+## WebP output, saved CSV rules, and filter preview
+
+- [x] Define local-only contracts for WebP output, browser-stored column-exclusion rules, and before/after CSV row previews.
+- [x] Implement optional WebP clean-copy output for supported single-image and batch paths, including filenames and privacy-safe reports.
+- [x] Implement locally persisted named CSV exclusion rules with clear save, apply, and delete recovery controls.
+- [x] Implement bounded before/after CSV previews that show retained columns and formula neutralization without changing the original file.
+- [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 27 tests, TypeScript, and the GitHub Pages build. Browser checks confirmed an `image-01-clean.webp` ZIP entry with WebP quality evidence, a local rule storing only `email` and `contact_phone` headers, and a 375 px layout without page-wide horizontal overflow.
+- [ ] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.

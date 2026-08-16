@@ -65,6 +65,12 @@ describe("local metadata reports", () => {
     expect(report).not.toContain("should-not-export");
   });
 
+  it("records WebP quality without treating it as JPEG quality", () => {
+    const csv = createMetadataCsv(inspection, { ...options, cleanFormat: "webp", webpQuality: 72 }, ["selected_format", "jpeg_quality", "webp_quality"]);
+    expect(csv.split("\r\n")).toEqual(["section,field,value,clean_copy_effect", "clean_copy,selected_format,webp,not-applicable", "clean_copy,jpeg_quality,not-applicable,not-applicable", "clean_copy,webp_quality,72,not-applicable"]);
+    expect(createMetadataJson(inspection, { ...options, cleanFormat: "webp", webpQuality: 72 })).toContain('"webpQuality": 72');
+  });
+
   it("records anonymous output naming and orientation normalization without exporting the source name", () => {
     const orientedInspection = { ...inspection, exif: { ...inspection.exif, orientation: 6 } };
     const csv = createMetadataCsv(orientedInspection, { ...options, anonymizeOutputName: true }, ["output_name", "orientation_correction"]);

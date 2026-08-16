@@ -16,11 +16,11 @@ function downloadCsv(csv: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function MetadataCsvReport({ inspection, cleanFormat, jpegQuality, resizeOptions, estimatedBytes, cleanCopyOffered, anonymizeOutputName = false }: { inspection: ImageInspection; cleanFormat: CleanCopyFormat; jpegQuality: number; resizeOptions?: ResizeOptions | null; estimatedBytes: number | null; cleanCopyOffered: boolean; anonymizeOutputName?: boolean }) {
+export function MetadataCsvReport({ inspection, cleanFormat, jpegQuality, webpQuality, resizeOptions, estimatedBytes, cleanCopyOffered, anonymizeOutputName = false }: { inspection: ImageInspection; cleanFormat: CleanCopyFormat; jpegQuality: number; webpQuality?: number; resizeOptions?: ResizeOptions | null; estimatedBytes: number | null; cleanCopyOffered: boolean; anonymizeOutputName?: boolean }) {
   const [stage, setStage] = useState<ExportStage>("idle");
   const [error, setError] = useState<string | null>(null);
   const [selectedFields, setSelectedFields] = useState<SafeCsvField[]>(DEFAULT_CSV_FIELDS);
-  const csv = useMemo(() => createMetadataCsv(inspection, { cleanFormat, jpegQuality, resizeOptions, estimatedBytes, cleanCopyOffered, anonymizeOutputName }, selectedFields), [anonymizeOutputName, cleanCopyOffered, cleanFormat, estimatedBytes, inspection, jpegQuality, resizeOptions, selectedFields]);
+  const csv = useMemo(() => createMetadataCsv(inspection, { cleanFormat, jpegQuality, webpQuality, resizeOptions, estimatedBytes, cleanCopyOffered, anonymizeOutputName }, selectedFields), [anonymizeOutputName, cleanCopyOffered, cleanFormat, estimatedBytes, inspection, jpegQuality, resizeOptions, selectedFields, webpQuality]);
   const toggleField = (field: SafeCsvField) => setSelectedFields((current) => current.includes(field) ? current.filter((value) => value !== field) : [...current, field]);
   const exportCsv = () => {
     setStage("idle");

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type Key
 import JSZip from "jszip";
 import { AlertTriangle, Check, ChevronDown, ChevronUp, FileArchive, FileSpreadsheet, GripVertical, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { canCreateCleanCopy, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, outputDimensionsForResize, supportedImageType } from "@/lib/image";
+import { canCreateCleanCopy, cleanCopyFileExtension, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, outputDimensionsForResize, supportedImageType } from "@/lib/image";
 import { createCombinedBatchCsv, createMetadataCsv, createMetadataJson, DEFAULT_CSV_FIELDS, ReportOptions, SAFE_CSV_FIELDS, SafeCsvField } from "@/lib/metadataReport";
 import { createZipOutputPlan, moveQueueItem, moveQueueItemBefore } from "@/lib/batchQueue";
 import { clearSessionBatchQueue, restoreSessionBatchQueue, saveSessionBatchQueue, SessionBatchItem } from "@/lib/batchSessionVault";
@@ -107,7 +107,7 @@ export function BatchImageProcessor() {
 
   const eligible = items.filter(isCleanEligible);
   const combinedEntries: BatchReportEntry[] = eligible.map((item, index) => ({ itemId: safeItemId(index), inspection: item.inspection!, options: reportOptionsFor(item) }));
-  const zipOutputByItemId = createZipOutputPlan(items, isCleanEligible, (item) => (item.outputFormat ?? "jpeg") === "jpeg" ? "jpg" : "png");
+  const zipOutputByItemId = createZipOutputPlan(items, isCleanEligible, (item) => cleanCopyFileExtension(item.outputFormat ?? "jpeg"));
   const completedCount = eligible.filter((item) => item.bundleStage === "complete").length;
   const progressValue = archiveStage === "complete" ? 100 : archiveStage === "finalizing" ? 95 : eligible.length ? Math.round((completedCount / eligible.length) * 85) : 0;
   const orderingLocked = isSessionRestoring || isBundling || items.some((item) => item.status === "reading");
@@ -227,7 +227,7 @@ export function BatchImageProcessor() {
         try {
           const clean = await createExifFreeImage(item.file, format, options.jpegQuality, options.resizeOptions);
           const id = safeItemId(index);
-          const extension = format === "jpeg" ? "jpg" : "png";
+          const extension = cleanCopyFileExtension(format);
           setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, bundleStage: "reports" } : entry));
           zip.file(`clean/${id}-clean.${extension}`, clean);
           zip.file(`reports/${id}-metadata.json`, createMetadataJson(inspection, options));
@@ -240,7 +240,7 @@ export function BatchImageProcessor() {
       }
       if (!completedEntries.length) throw new Error("No eligible image could be cleaned locally, so a ZIP bundle was not created.");
       zip.file("reports/batch-metadata.csv", `\uFEFF${createCombinedBatchCsv(completedEntries, selectedCombinedFields)}`);
-      zip.file("README.txt", "Private Preflight local batch bundle. Originals, raw metadata, and source filenames are not included. Each clean image uses an anonymous ordinal filename, its selected browser-generated JPEG or PNG format, local EXIF orientation normalization when required, and paired JSON and CSV signal reports.");
+      zip.file("README.txt", "Private Preflight local batch bundle. Originals, raw metadata, and source filenames are not included. Each clean image uses an anonymous ordinal filename, its selected browser-generated JPEG, WebP, or PNG format, local EXIF orientation normalization when required, and paired JSON and CSV signal reports.");
       setArchiveStage("finalizing");
       setBundleProgress({ current: completedEntries.length, total: eligible.length, currentName: "Writing local archive" });
       const bundle = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
@@ -298,8 +298,9 @@ export function BatchImageProcessor() {
                   <div className="batch-format-picker" role="group" aria-label={`Clean output format for item ${index + 1}`}>
                     <button type="button" disabled={isBundling} className={format === "jpeg" ? "is-active" : ""} onClick={() => setOutputFormat(item.id, "jpeg")}>JPEG</button>
                     <button type="button" disabled={isBundling} className={format === "png" ? "is-active" : ""} onClick={() => setOutputFormat(item.id, "png")}>PNG</button>
+                    <button type="button" disabled={isBundling} className={format === "webp" ? "is-active" : ""} onClick={() => setOutputFormat(item.id, "webp")}>WebP</button>
                   </div>
-                  {format === "jpeg" && <label className="batch-quality-control"><span>JPEG quality <strong>{jpegQuality}</strong></span><input type="range" min={MIN_JPEG_QUALITY} max={MAX_JPEG_QUALITY} value={jpegQuality} disabled={isBundling} onChange={(event) => setJpegQuality(item.id, Number(event.target.value))} aria-label={`JPEG quality for item ${index + 1}`} /></label>}
+                  {(format === "jpeg" || format === "webp") && <label className="batch-quality-control"><span>{format === "webp" ? "WebP" : "JPEG"} quality <strong>{jpegQuality}</strong></span><input type="range" min={MIN_JPEG_QUALITY} max={MAX_JPEG_QUALITY} value={jpegQuality} disabled={isBundling} onChange={(event) => setJpegQuality(item.id, Number(event.target.value))} aria-label={`${format === "webp" ? "WebP" : "JPEG"} quality for item ${index + 1}`} /></label>}
                   <div className="batch-resize-control"><label><input type="checkbox" checked={resizeEnabled} disabled={isBundling} onChange={(event) => setResizeMaxLongEdge(item.id, event.target.checked ? Math.min(1920, Math.max(item.inspection!.width, item.inspection!.height)) : null)} /> Resize before ZIP</label>{resizeEnabled && <><label>Max long edge <input type="number" inputMode="numeric" min={1} max={Math.max(item.inspection!.width, item.inspection!.height)} value={item.resizeMaxLongEdge ?? ""} disabled={isBundling} onChange={(event) => setResizeMaxLongEdge(item.id, Number(event.target.value))} /> px</label><small>Output: {resizeOutput?.width} × {resizeOutput?.height}px · proportions preserved</small></>}</div>
                 </>}
               </div>
@@ -324,7 +325,7 @@ export function BatchImageProcessor() {
         <div className="batch-processor__actions">
           <div>
             <strong>{eligible.length} eligible clean {eligible.length === 1 ? "copy" : "copies"}</strong>
-            <p>DECIDE / 04 · Choose JPEG or PNG and, for JPEG, a per-image compression quality. The ZIP includes matched JSON/CSV reports plus one filtered combined batch CSV; original names are not used.</p>
+            <p>DECIDE / 04 · Choose JPEG, WebP, or PNG and, for JPEG, a per-image compression quality. The ZIP includes matched JSON/CSV reports plus one filtered combined batch CSV; original names are not used.</p>
             {bundleNote && <p className="batch-processor__success"><Check aria-hidden="true" /> {bundleNote}</p>}
             {bundleError && <p className="batch-processor__error"><AlertTriangle aria-hidden="true" /> {bundleError}</p>}
           </div>

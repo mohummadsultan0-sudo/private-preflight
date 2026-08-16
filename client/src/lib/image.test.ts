@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only image metadata parser. */
 import { describe, expect, it } from "vitest";
-import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, needsOrientationCorrection, orientationCorrectedDimensions, outputDimensionsForResize, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
+import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileExtension, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, needsOrientationCorrection, orientationCorrectedDimensions, outputDimensionsForResize, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
 
 function withExifTiff(): Uint8Array {
   const bytes = new Uint8Array(50);
@@ -51,7 +51,10 @@ describe("local image metadata", () => {
     expect(canCreateCleanCopy("gif", "none", { hasIccProfile: true, hasTextComments: true, hasXmp: true })).toBe(false);
     expect(cleanCopyFileName("holiday.photo.JPG")).toBe("holiday.photo-clean.png");
     expect(cleanCopyFileName("holiday.photo.JPG", "jpeg")).toBe("holiday.photo-clean.jpg");
+    expect(cleanCopyFileName("holiday.photo.JPG", "webp")).toBe("holiday.photo-clean.webp");
     expect(cleanCopyFileName("holiday.photo.JPG", "jpeg", true)).toBe("private-preflight-image-clean.jpg");
+    expect(cleanCopyFileName("holiday.photo.JPG", "webp", true)).toBe("private-preflight-image-clean.webp");
+    expect(cleanCopyFileExtension("webp")).toBe("webp");
     expect(CLEAN_JPEG_QUALITY).toBe(0.9);
   });
 

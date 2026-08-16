@@ -18,7 +18,7 @@ export function moveQueueItemBefore<T extends QueueEntry>(items: readonly T[], s
   return moveQueueItem(items, sourceId, sourceIndex < targetIndex ? targetIndex - 1 : targetIndex);
 }
 
-export function createZipOutputPlan<T extends QueueEntry>(items: readonly T[], isEligible: (item: T) => boolean, extensionFor: (item: T) => "jpg" | "png") {
+export function createZipOutputPlan<T extends QueueEntry>(items: readonly T[], isEligible: (item: T) => boolean, extensionFor: (item: T) => "jpg" | "png" | "webp") {
   const outputPlan = new Map<string, string>();
   items.filter(isEligible).forEach((item, index) => {
     const ordinal = `image-${String(index + 1).padStart(2, "0")}`;

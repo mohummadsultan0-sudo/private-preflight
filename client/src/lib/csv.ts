@@ -64,6 +64,14 @@ export interface SafeCsvCopyResult {
   neutralizedCellCount: number;
 }
 
+export interface SafeCsvPreview {
+  sourceHeaders: string[];
+  sourceRows: string[][];
+  outputHeaders: string[];
+  outputRows: string[][];
+  rowLimit: number;
+}
+
 export class CsvPreflightError extends Error {
   constructor(
     public readonly code: "file_too_large" | "empty_file" | "binary_file" | "read_failed",
@@ -383,6 +391,17 @@ export function createSafeCsvCopy(analysis: CsvAnalysis, options: SafeCsvCopyOpt
     return escapeCell(transformed, analysis.delimiter);
   }).join(analysis.delimiter)).join("\r\n");
   return { contents, retainedColumns, excludedColumns, neutralizedCellCount };
+}
+
+/** Produces a bounded, in-memory review of the first data rows before and after the chosen sharing transformation. */
+export function previewSafeCsvCopy(analysis: CsvAnalysis, options: SafeCsvCopyOptions = {}, rowLimit = 3): SafeCsvPreview {
+  const safeCopy = createSafeCsvCopy(analysis, options);
+  const limit = Math.min(8, Math.max(1, Math.round(rowLimit) || 3));
+  const outputRows = analysis.rows.slice(0, limit).map((row) => safeCopy.retainedColumns.map((columnIndex) => {
+    const value = row[columnIndex] ?? "";
+    return options.neutralizeFormulaCells && FORMULA_START.test(value) ? `\t${value}` : value;
+  }));
+  return { sourceHeaders: [...analysis.headers], sourceRows: analysis.rows.slice(0, limit).map((row) => [...row]), outputHeaders: safeCopy.retainedColumns.map((columnIndex) => analysis.headers[columnIndex] ?? ""), outputRows, rowLimit: limit };
 }
 
 export function createReport(analysis: CsvAnalysis): string {

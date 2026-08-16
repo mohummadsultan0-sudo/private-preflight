@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  BookmarkPlus,
   Check,
   Download,
   FileCheck2,
@@ -14,6 +15,7 @@ import {
   RotateCcw,
   ShieldCheck,
   TriangleAlert,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -32,7 +34,9 @@ import {
   MAX_FILE_BYTES,
   createReport,
   createSafeCsvCopy,
+  previewSafeCsvCopy,
 } from "@/lib/csv";
+import { createSavedCsvExclusionRule, matchingCsvRuleColumns, readSavedCsvExclusionRules, SavedCsvExclusionRule, writeSavedCsvExclusionRules } from "@/lib/csvExclusionRules";
 
 type Stage = "idle" | "reading" | "inspecting" | "complete" | "error";
 type ResultView = "overview" | "structure" | "formula" | "duplicates" | "privacy";
@@ -53,6 +57,11 @@ function severityClass(count: number): string {
   if (count === 0) return "is-clear";
   if (count < 3) return "is-watch";
   return "is-alert";
+}
+
+function previewCell(value: string): string {
+  const visible = value.startsWith("\t") ? `↹ ${value.slice(1)}` : value;
+  return visible.length > 72 ? `${visible.slice(0, 71)}…` : visible || "—";
 }
 
 function SummaryStat({ label, value, tone = "neutral", detail }: { label: string; value: number | string; tone?: "neutral" | "alert" | "watch" | "clear"; detail: string }) {
@@ -93,6 +102,9 @@ export function CsvWorkspace() {
   const [showSafeExport, setShowSafeExport] = useState(false);
   const [safeExcludedColumns, setSafeExcludedColumns] = useState<number[]>([]);
   const [neutralizeFormulaCells, setNeutralizeFormulaCells] = useState(true);
+  const [savedExclusionRules, setSavedExclusionRules] = useState<SavedCsvExclusionRule[]>([]);
+  const [ruleName, setRuleName] = useState("Contact fields");
+  const [ruleNotice, setRuleNotice] = useState<string | null>(null);
 
   const duplicateGroups = useMemo(
     () => (analysis ? findDuplicateGroups(analysis.rows, selectedColumns, matchMode) : []),
@@ -100,6 +112,10 @@ export function CsvWorkspace() {
   );
   const safeCopy = useMemo(
     () => (analysis ? createSafeCsvCopy(analysis, { excludedColumns: safeExcludedColumns, neutralizeFormulaCells }) : null),
+    [analysis, neutralizeFormulaCells, safeExcludedColumns],
+  );
+  const safePreview = useMemo(
+    () => (analysis ? previewSafeCsvCopy(analysis, { excludedColumns: safeExcludedColumns, neutralizeFormulaCells }) : null),
     [analysis, neutralizeFormulaCells, safeExcludedColumns],
   );
 
@@ -116,6 +132,11 @@ export function CsvWorkspace() {
     }
   }, [pendingNonStandardFile, rejectedFile]);
 
+  useEffect(() => {
+    try { setSavedExclusionRules(readSavedCsvExclusionRules(window.localStorage)); }
+    catch { setRuleNotice("Saved header rules are unavailable in this browser. This file remains local in the current tab."); }
+  }, []);
+
   const reset = () => {
     setFile(null);
     setAnalysis(null);
@@ -127,6 +148,7 @@ export function CsvWorkspace() {
     setSelectedColumns([]);
     setSafeExcludedColumns([]);
     setNeutralizeFormulaCells(true);
+    setRuleNotice(null);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -144,6 +166,7 @@ export function CsvWorkspace() {
       setResultView("overview");
       setSafeExcludedColumns([]);
       setNeutralizeFormulaCells(true);
+      setRuleNotice(null);
     } catch (caught) {
       const message = caught instanceof CsvPreflightError ? caught.message : "The browser could not complete this inspection. Your file was not uploaded. Reset and try again.";
       setError(message);
@@ -178,6 +201,25 @@ export function CsvWorkspace() {
   const toggleSafeExcludedColumn = (column: number) => {
     setSafeExcludedColumns((current) => (current.includes(column) ? current.filter((item) => item !== column) : [...current, column]));
   };
+  const persistRules = (nextRules: SavedCsvExclusionRule[], notice: string) => {
+    setSavedExclusionRules(nextRules);
+    try { writeSavedCsvExclusionRules(window.localStorage, nextRules); setRuleNotice(notice); }
+    catch { setRuleNotice("The rule changed only in this page because this browser could not save local preferences."); }
+  };
+  const saveExclusionRule = () => {
+    if (!analysis || safeExcludedColumns.length === 0) { setRuleNotice("Choose at least one column before saving a local header rule."); return; }
+    const rule = createSavedCsvExclusionRule(ruleName, safeExcludedColumns.map((column) => analysis.headers[column] ?? ""));
+    if (!rule) { setRuleNotice("Enter a short rule name and choose at least one named column."); return; }
+    persistRules([rule, ...savedExclusionRules].slice(0, 12), `Saved “${rule.name}” locally. It stores header labels only, not this file or its values.`);
+  };
+  const applyExclusionRule = (rule: SavedCsvExclusionRule) => {
+    if (!analysis) return;
+    const matching = matchingCsvRuleColumns(analysis.headers, rule);
+    const allowed = matching.length >= analysis.headers.length ? matching.slice(0, -1) : matching;
+    setSafeExcludedColumns(allowed);
+    setRuleNotice(allowed.length ? `Applied “${rule.name}” to ${allowed.length} matching header${allowed.length === 1 ? "" : "s"}.` : `“${rule.name}” does not match headers in this file.`);
+  };
+  const deleteExclusionRule = (id: string) => persistRules(savedExclusionRules.filter((rule) => rule.id !== id), "Removed the local header rule.");
 
   const downloadReport = () => {
     if (!analysis) return;
@@ -229,7 +271,7 @@ export function CsvWorkspace() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (localSupported) chooseFile(event.dataTransfer.files?.[0]); }}
           >
-            <div className="dropzone__index"><span>ACTIVE WORKBENCH</span><strong>FILE / 01</strong></div>
+            <div className="dropzone__index"><span>ACTIVE WORKBENCH</span><strong>RECORD / 01 · CSV FILE</strong><i aria-hidden="true" /></div>
             {rejectedFile ? (
               <div className="decision-card decision-card--inline" ref={decisionRef} tabIndex={-1} role="alert">
                 <div className="decision-card__glyph"><FileWarning aria-hidden="true" /></div>
@@ -256,7 +298,7 @@ export function CsvWorkspace() {
                 <p className="dropzone__helper"><strong>New here?</strong> Choose a file you are about to open or share. Prefer a quick tour? Start with the safe demo.</p>
                 <div className="dropzone__actions">
                   <Button className="action-button" disabled={!localSupported} onClick={() => inputRef.current?.click()}><Upload aria-hidden="true" /> Choose file</Button>
-                  <Button variant="ghost" className="quiet-button" disabled={!localSupported} onClick={useDemo}>Try a safe demo <ArrowRight aria-hidden="true" /></Button>
+                  <Button variant="ghost" className="quiet-button" disabled={!localSupported} onClick={useDemo}>Try a local demo <ArrowRight aria-hidden="true" /></Button>
                 </div>
                 <input ref={inputRef} type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" onChange={onFileInput} className="sr-only" aria-label="Choose a CSV file for local inspection" />
               </>
@@ -365,7 +407,9 @@ export function CsvWorkspace() {
             <span className="eyebrow"><span>REVIEW</span> Local sharing copy</span><h2 id="export-title">Prepare a privacy-safe CSV copy.</h2><p>Exclude fields you do not want to share, then optionally add a leading tab to formula-like cells. The copy is created in this browser; your original file is not modified or uploaded.</p>
             <div className="safe-copy-summary"><span>{safeCopy?.retainedColumns.length ?? 0} columns kept</span><span>{safeCopy?.excludedColumns.length ?? 0} excluded</span><span>{safeCopy?.neutralizedCellCount ?? 0} formula-like cells neutralized</span></div>
             <fieldset className="safe-copy-columns"><legend>Columns to exclude from the new copy</legend><p>Selecting a field removes its header and every value under it. Keep at least one column.</p><div>{analysis.headers.map((header, index) => <label key={`${header}-${index}`}><input type="checkbox" checked={safeExcludedColumns.includes(index)} onChange={() => toggleSafeExcludedColumn(index)} disabled={safeExcludedColumns.length === analysis.headers.length - 1 && !safeExcludedColumns.includes(index)} /> <span>{header.trim() || `Column ${index + 1}`}</span>{analysis.piiSignals.some((signal) => signal.column === index + 1) && <small>PII signal</small>}</label>)}</div></fieldset>
+            <section className="saved-exclusion-rules" aria-labelledby="saved-rules-title"><div><span className="eyebrow"><span>REUSE</span> Browser-only header rules</span><h3 id="saved-rules-title">Save this column choice for another CSV.</h3><p>Rules store selected header labels only in this browser. They never store this file name, row values, or file bytes.</p></div><div className="saved-exclusion-rules__save"><label>Rule name <input value={ruleName} maxLength={48} onChange={(event) => setRuleName(event.target.value)} placeholder="e.g. Contact fields" /></label><Button type="button" variant="outline" onClick={saveExclusionRule}><BookmarkPlus aria-hidden="true" /> Save local rule</Button></div>{savedExclusionRules.length > 0 ? <ul>{savedExclusionRules.map((rule) => <li key={rule.id}><div><strong>{rule.name}</strong><small>{rule.headers.join(" · ")}</small></div><span><Button type="button" variant="ghost" onClick={() => applyExclusionRule(rule)}>Apply</Button><button type="button" onClick={() => deleteExclusionRule(rule.id)} aria-label={`Delete local rule ${rule.name}`} title="Delete local rule"><Trash2 aria-hidden="true" /></button></span></li>)}</ul> : <p className="saved-exclusion-rules__empty">No local header rules saved yet.</p>}{ruleNotice && <p className="saved-exclusion-rules__notice" role="status">{ruleNotice}</p>}</section>
             <label className="safe-copy-formula"><input type="checkbox" checked={neutralizeFormulaCells} onChange={(event) => setNeutralizeFormulaCells(event.target.checked)} /><span>Neutralize formula-like cells</span><small>Adds a leading tab to values that start with spreadsheet-interpretable characters. This changes copied values and is not universal protection.</small></label>
+            {safePreview && <section className="safe-copy-preview" aria-labelledby="safe-preview-title"><div className="safe-copy-preview__heading"><span className="eyebrow"><span>VERIFY</span> First {safePreview.rowLimit} local data rows</span><h3 id="safe-preview-title">Compare before and after filtering.</h3><p>Visible only in this browser dialog. “↹” marks a leading tab added for formula neutralization.</p></div><div className="safe-copy-preview__tables"><article><h4>Original local rows</h4><div className="data-table-wrap"><table><thead><tr>{safePreview.sourceHeaders.map((header, index) => <th key={`${header}-${index}`}>{header || `Column ${index + 1}`}</th>)}</tr></thead><tbody>{safePreview.sourceRows.map((row, rowIndex) => <tr key={rowIndex}>{safePreview.sourceHeaders.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{previewCell(row[columnIndex] ?? "")}</td>)}</tr>)}</tbody></table></div></article><article><h4>Privacy-safe copy</h4><div className="data-table-wrap"><table><thead><tr>{safePreview.outputHeaders.map((header, index) => <th key={`${header}-${index}`}>{header || `Column ${index + 1}`}</th>)}</tr></thead><tbody>{safePreview.outputRows.map((row, rowIndex) => <tr key={rowIndex}>{safePreview.outputHeaders.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{previewCell(row[columnIndex] ?? "")}</td>)}</tr>)}</tbody></table></div></article></div></section>}
             <div className="dialog-actions"><Button variant="outline" onClick={() => setShowSafeExport(false)}>Keep original only</Button><Button className="action-button" disabled={!safeCopy || safeCopy.retainedColumns.length === 0} onClick={downloadSafeExport}><Download aria-hidden="true" /> Download safe CSV</Button></div>
           </section>
         </div>
