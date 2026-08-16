@@ -183,4 +183,4 @@
 - [x] Implement optional anonymous image output names for single images and ZIP batch items without exposing original names in output paths.
 - [x] Implement EXIF orientation correction through the local clean-copy canvas before metadata is removed, with a clear result disclosure.
 - [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 24 tests, TypeScript, and the GitHub Pages build.
-- [ ] Publish and validate the updated GitHub Pages release without adding a server upload or Manus-hosted dependency.
+- [x] Publish and validate the updated GitHub Pages release without adding a server upload or Manus-hosted dependency.
