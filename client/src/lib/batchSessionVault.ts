@@ -14,6 +14,7 @@ export type SessionBatchItem = {
   error?: string;
   outputFormat?: CleanCopyFormat;
   jpegQuality?: number;
+  resizeMaxLongEdge?: number | null;
   bundleStage?: "queued" | "complete" | "failed";
   bundleError?: string;
 };

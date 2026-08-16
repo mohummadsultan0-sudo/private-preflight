@@ -55,4 +55,13 @@ describe("local metadata reports", () => {
       "image-02,clean_copy,jpeg_quality,not-applicable,not-applicable",
     ]);
   });
+
+  it("records privacy-safe output dimensions for a locally resized copy", () => {
+    const csv = createMetadataCsv(inspection, { ...options, resizeOptions: { maxWidth: 20, maxHeight: 20 } }, ["output_dimensions"]);
+    expect(csv.split("\r\n")).toEqual(["section,field,value,clean_copy_effect", "clean_copy,output_dimensions,20x10,resized-locally"]);
+    const report = createMetadataJson(inspection, { ...options, resizeOptions: { maxWidth: 20, maxHeight: 20 } });
+    expect(report).toContain('"outputDimensions": {');
+    expect(report).toContain('"width": 20');
+    expect(report).not.toContain("should-not-export");
+  });
 });

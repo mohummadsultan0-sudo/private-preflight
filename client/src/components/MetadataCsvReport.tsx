@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CleanCopyFormat, ImageInspection } from "@/lib/image";
+import { CleanCopyFormat, ImageInspection, ResizeOptions } from "@/lib/image";
 import { createMetadataCsv, DEFAULT_CSV_FIELDS, SAFE_CSV_FIELDS, SafeCsvField } from "@/lib/metadataReport";
 
 type ExportStage = "idle" | "complete" | "error";
@@ -16,11 +16,11 @@ function downloadCsv(csv: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function MetadataCsvReport({ inspection, cleanFormat, jpegQuality, estimatedBytes, cleanCopyOffered }: { inspection: ImageInspection; cleanFormat: CleanCopyFormat; jpegQuality: number; estimatedBytes: number | null; cleanCopyOffered: boolean }) {
+export function MetadataCsvReport({ inspection, cleanFormat, jpegQuality, resizeOptions, estimatedBytes, cleanCopyOffered }: { inspection: ImageInspection; cleanFormat: CleanCopyFormat; jpegQuality: number; resizeOptions?: ResizeOptions | null; estimatedBytes: number | null; cleanCopyOffered: boolean }) {
   const [stage, setStage] = useState<ExportStage>("idle");
   const [error, setError] = useState<string | null>(null);
   const [selectedFields, setSelectedFields] = useState<SafeCsvField[]>(DEFAULT_CSV_FIELDS);
-  const csv = useMemo(() => createMetadataCsv(inspection, { cleanFormat, jpegQuality, estimatedBytes, cleanCopyOffered }, selectedFields), [cleanCopyOffered, cleanFormat, estimatedBytes, inspection, jpegQuality, selectedFields]);
+  const csv = useMemo(() => createMetadataCsv(inspection, { cleanFormat, jpegQuality, resizeOptions, estimatedBytes, cleanCopyOffered }, selectedFields), [cleanCopyOffered, cleanFormat, estimatedBytes, inspection, jpegQuality, resizeOptions, selectedFields]);
   const toggleField = (field: SafeCsvField) => setSelectedFields((current) => current.includes(field) ? current.filter((value) => value !== field) : [...current, field]);
   const exportCsv = () => {
     setStage("idle");

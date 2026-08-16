@@ -10,6 +10,10 @@ export const CLEAN_JPEG_QUALITY = 0.9;
 export const JPEG_QUALITY_MIN = 40;
 export const JPEG_QUALITY_MAX = 95;
 export const DEFAULT_JPEG_QUALITY = 90;
+export const RESIZE_LONG_EDGE_OPTIONS = [2560, 1920, 1280, 800] as const;
+
+export type ResizeOptions = { maxWidth?: number; maxHeight?: number; exact?: boolean };
+export type OutputDimensions = { width: number; height: number; resized: boolean };
 
 export interface AncillaryMetadata {
   hasIccProfile: boolean;
@@ -305,6 +309,22 @@ export function clampJpegQuality(value: number): number {
   return Math.min(JPEG_QUALITY_MAX, Math.max(JPEG_QUALITY_MIN, Math.round(value)));
 }
 
+/** Computes browser-local output dimensions. Default mode fits within bounds and preserves proportions; exact mode intentionally uses the provided width and height. */
+export function outputDimensionsForResize(width: number, height: number, options?: ResizeOptions | null): OutputDimensions {
+  const maxWidth = Number.isFinite(options?.maxWidth) && (options?.maxWidth ?? 0) > 0 ? Math.round(options!.maxWidth!) : undefined;
+  const maxHeight = Number.isFinite(options?.maxHeight) && (options?.maxHeight ?? 0) > 0 ? Math.round(options!.maxHeight!) : undefined;
+  if (!width || !height || (!maxWidth && !maxHeight)) return { width, height, resized: false };
+  if (options?.exact) {
+    const targetWidth = maxWidth ?? width;
+    const targetHeight = maxHeight ?? height;
+    return { width: targetWidth, height: targetHeight, resized: targetWidth !== width || targetHeight !== height };
+  }
+  const scale = Math.min(1, maxWidth ? maxWidth / width : 1, maxHeight ? maxHeight / height : 1);
+  const targetWidth = Math.max(1, Math.round(width * scale));
+  const targetHeight = Math.max(1, Math.round(height * scale));
+  return { width: targetWidth, height: targetHeight, resized: targetWidth !== width || targetHeight !== height };
+}
+
 function validateImageFile(file: File): SupportedImageType {
   const type = supportedImageType(file);
   if (!type) throw new ImageInspectionError("unsupported_type", "Choose a JPEG, PNG, WebP, or GIF image for local inspection.");
@@ -414,23 +434,24 @@ async function stripJpegAncillarySegments(blob: Blob): Promise<Blob> {
 }
 
 /** Re-encodes visible local pixels; source EXIF and source-file metadata are not carried into the new blob. */
-export async function createExifFreeImage(file: File, outputFormat: CleanCopyFormat, jpegQuality = DEFAULT_JPEG_QUALITY): Promise<Blob> {
+export async function createExifFreeImage(file: File, outputFormat: CleanCopyFormat, jpegQuality = DEFAULT_JPEG_QUALITY, resizeOptions?: ResizeOptions | null): Promise<Blob> {
   const type = validateImageFile(file);
   if (type === "gif") throw new ImageCleanError("not_cleanable", "GIF clean copies are not available because this release does not re-encode animated images.");
   let decoded: CanvasSource | null = null;
   try {
     decoded = await decodeForCanvas(file);
     if (!decoded.width || !decoded.height) throw new ImageCleanError("clean_failed", "The browser could not read pixels for the clean copy.");
+    const outputDimensions = outputDimensionsForResize(decoded.width, decoded.height, resizeOptions);
     const canvas = document.createElement("canvas");
-    canvas.width = decoded.width;
-    canvas.height = decoded.height;
+    canvas.width = outputDimensions.width;
+    canvas.height = outputDimensions.height;
     const context = canvas.getContext("2d");
     if (!context) throw new ImageCleanError("clean_failed", "The browser could not prepare a local clean-copy canvas.");
     if (outputFormat === "jpeg") {
       context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, decoded.width, decoded.height);
+      context.fillRect(0, 0, outputDimensions.width, outputDimensions.height);
     }
-    context.drawImage(decoded.source, 0, 0, decoded.width, decoded.height);
+    context.drawImage(decoded.source, 0, 0, outputDimensions.width, outputDimensions.height);
     const blob = await canvasToCleanBlob(canvas, outputFormat, jpegQuality);
     return outputFormat === "jpeg" ? await stripJpegAncillarySegments(blob) : blob;
   } catch (caught) {

@@ -159,3 +159,19 @@
 - [x] Verify that the available alternate CLI account, `aldar000405-a11y`, does not have write access to `mohummadsultan0-sudo/private-preflight`.
 - [x] Avoid the unavailable alternate-account email flow; no password or email verification code was collected.
 - [x] Use the already authenticated repository-owner session to approve GitHub device authorization and push the verified update without email verification.
+
+## GitHub Pages end-to-end acceptance sweep
+
+- [x] Prepare harmless local CSV and image fixtures for valid, unsupported, and recovery-path checks.
+- [x] Test the public home, CSV preflight, image inspector, privacy page, routes, local report downloads, and share fallback.
+- [x] Test image cleanup, metadata reports, and a bounded batch flow without exposing any user data.
+- [x] Check responsive phone rendering, keyboard-accessible controls, canonical metadata, and absence of Manus-linked page assets.
+- [x] Record results, repair any critical defect, and publish a concise final acceptance report.
+
+## Local image resizing
+
+- [x] Define privacy-preserving resize controls, safe bounds, aspect-ratio behavior, and output semantics for a local clean copy.
+- [x] Implement local image resizing for single-image and eligible batch clean-copy paths without uploading source bytes.
+- [x] Show selected output dimensions, actual local size comparison, and retain existing clear recovery messages for unsupported or failed conversions.
+- [x] Add deterministic resize/report tests; verify single-image 3200×2000 → 1280×800 preview and batch 3000×2000 → 1920×1280 ZIP output; verify phone layout; run TypeScript, 20 deterministic tests, and the GitHub Pages build.
+- [ ] Publish the update to GitHub Pages and validate that no Manus-hosted dependency is introduced.

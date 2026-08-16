@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only image metadata parser. */
 import { describe, expect, it } from "vitest";
-import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
+import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, outputDimensionsForResize, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
 
 function withExifTiff(): Uint8Array {
   const bytes = new Uint8Array(50);
@@ -59,5 +59,13 @@ describe("local image metadata", () => {
     expect(clampJpegQuality(100)).toBe(JPEG_QUALITY_MAX);
     expect(clampJpegQuality(82.6)).toBe(83);
     expect(readAncillaryMetadata(jpegWithAncillarySegments(), "jpeg")).toEqual({ hasIccProfile: true, hasTextComments: true, hasXmp: true });
+  });
+
+  it("preserves aspect ratio and never upscales when calculating a local resize", () => {
+    expect(outputDimensionsForResize(4000, 3000, { maxWidth: 2000, maxHeight: 2000 })).toEqual({ width: 2000, height: 1500, resized: true });
+    expect(outputDimensionsForResize(3000, 4000, { maxWidth: 1280, maxHeight: 1280 })).toEqual({ width: 960, height: 1280, resized: true });
+    expect(outputDimensionsForResize(800, 600, { maxWidth: 1280, maxHeight: 1280 })).toEqual({ width: 800, height: 600, resized: false });
+    expect(outputDimensionsForResize(800, 600, { maxWidth: 640, maxHeight: 640, exact: true })).toEqual({ width: 640, height: 640, resized: true });
+    expect(outputDimensionsForResize(800, 600, null)).toEqual({ width: 800, height: 600, resized: false });
   });
 });

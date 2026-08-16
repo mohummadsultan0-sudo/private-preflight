@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type Key
 import JSZip from "jszip";
 import { AlertTriangle, Check, ChevronDown, ChevronUp, FileArchive, FileSpreadsheet, GripVertical, Images, LoaderCircle, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { canCreateCleanCopy, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, supportedImageType } from "@/lib/image";
+import { canCreateCleanCopy, CleanCopyFormat, createExifFreeImage, DEFAULT_JPEG_QUALITY, downloadLocalBlob, ImageInspection, inspectImageFile, MAX_IMAGE_BYTES, outputDimensionsForResize, supportedImageType } from "@/lib/image";
 import { createCombinedBatchCsv, createMetadataCsv, createMetadataJson, DEFAULT_CSV_FIELDS, ReportOptions, SAFE_CSV_FIELDS, SafeCsvField } from "@/lib/metadataReport";
 import { createZipOutputPlan, moveQueueItem, moveQueueItemBefore } from "@/lib/batchQueue";
 import { clearSessionBatchQueue, restoreSessionBatchQueue, saveSessionBatchQueue, SessionBatchItem } from "@/lib/batchSessionVault";
@@ -23,6 +23,7 @@ type BatchItem = {
   error?: string;
   outputFormat?: CleanCopyFormat;
   jpegQuality?: number;
+  resizeMaxLongEdge?: number | null;
   bundleStage?: BundleStage;
   bundleError?: string;
 };
@@ -32,7 +33,7 @@ type BatchReportEntry = { itemId: string; inspection: ImageInspection; options: 
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 const safeItemId = (index: number) => `image-${String(index + 1).padStart(2, "0")}`;
 const isCleanEligible = (item: BatchItem) => item.status === "ready" && Boolean(item.inspection) && canCreateCleanCopy(item.inspection!.format, item.inspection!.metadataState, item.inspection!.ancillaryMetadata);
-const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, estimatedBytes: null, cleanCopyOffered: true });
+const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, resizeOptions: item.resizeMaxLongEdge ? { maxWidth: item.resizeMaxLongEdge, maxHeight: item.resizeMaxLongEdge } : null, estimatedBytes: null, cleanCopyOffered: true });
 const toSessionItem = (item: BatchItem): SessionBatchItem | null => {
   if (item.status === "reading") return null;
   return { ...item, status: item.status, bundleStage: item.status === "ready" ? "queued" : item.bundleStage === "failed" ? "failed" : undefined };
@@ -97,7 +98,7 @@ export function BatchImageProcessor() {
         if (!supportedImageType(queuedItem.file)) throw new Error("Choose a JPEG, PNG, WebP, or GIF image.");
         if (queuedItem.file.size > MAX_IMAGE_BYTES) throw new Error("This file exceeds the 15 MB per-image local limit.");
         const inspection = await inspectImageFile(queuedItem.file);
-        setItems((current) => current.map((item) => item.id === queuedItem.id ? { ...item, status: "ready", inspection, outputFormat: "jpeg", jpegQuality: DEFAULT_JPEG_QUALITY, bundleStage: "queued" } : item));
+        setItems((current) => current.map((item) => item.id === queuedItem.id ? { ...item, status: "ready", inspection, outputFormat: "jpeg", jpegQuality: DEFAULT_JPEG_QUALITY, resizeMaxLongEdge: null, bundleStage: "queued" } : item));
       } catch (caught) {
         setItems((current) => current.map((item) => item.id === queuedItem.id ? { ...item, status: "rejected", error: caught instanceof Error ? caught.message : "This image could not be read locally." } : item));
       }
@@ -127,6 +128,11 @@ export function BatchImageProcessor() {
   };
   const setOutputFormat = (id: string, outputFormat: CleanCopyFormat) => setItems((current) => current.map((item) => item.id === id ? { ...item, outputFormat } : item));
   const setJpegQuality = (id: string, jpegQuality: number) => setItems((current) => current.map((item) => item.id === id ? { ...item, jpegQuality } : item));
+  const setResizeMaxLongEdge = (id: string, value: number | null) => setItems((current) => current.map((item) => {
+    if (item.id !== id) return item;
+    const maximum = item.inspection ? Math.max(item.inspection.width, item.inspection.height) : value ?? 1;
+    return { ...item, resizeMaxLongEdge: value === null ? null : Math.min(maximum, Math.max(1, Math.round(value) || 1)) };
+  }));
   const removeItem = (id: string) => {
     if (isBundling) return;
     setItems((current) => current.filter((item) => item.id !== id));
@@ -219,7 +225,7 @@ export function BatchImageProcessor() {
         setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, bundleStage: "cleaning" } : entry));
         await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
         try {
-          const clean = await createExifFreeImage(item.file, format, options.jpegQuality);
+          const clean = await createExifFreeImage(item.file, format, options.jpegQuality, options.resizeOptions);
           const id = safeItemId(index);
           const extension = format === "jpeg" ? "jpg" : "png";
           setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, bundleStage: "reports" } : entry));
@@ -271,6 +277,8 @@ export function BatchImageProcessor() {
             const canClean = isCleanEligible(item);
             const format = item.outputFormat ?? "jpeg";
             const jpegQuality = item.jpegQuality ?? DEFAULT_JPEG_QUALITY;
+            const resizeEnabled = Boolean(item.resizeMaxLongEdge);
+            const resizeOutput = item.inspection ? outputDimensionsForResize(item.inspection.width, item.inspection.height, resizeEnabled ? { maxWidth: item.resizeMaxLongEdge!, maxHeight: item.resizeMaxLongEdge! } : null) : null;
             const zipOutputName = zipOutputByItemId.get(item.id);
             const progressText = item.bundleStage === "cleaning" ? "Cleaning pixels locally" : item.bundleStage === "reports" ? "Writing privacy-safe reports" : item.bundleStage === "complete" ? "Included in ZIP" : item.bundleStage === "failed" ? item.bundleError : undefined;
             const itemIsDragging = draggedItemId === item.id;
@@ -292,6 +300,7 @@ export function BatchImageProcessor() {
                     <button type="button" disabled={isBundling} className={format === "png" ? "is-active" : ""} onClick={() => setOutputFormat(item.id, "png")}>PNG</button>
                   </div>
                   {format === "jpeg" && <label className="batch-quality-control"><span>JPEG quality <strong>{jpegQuality}</strong></span><input type="range" min={MIN_JPEG_QUALITY} max={MAX_JPEG_QUALITY} value={jpegQuality} disabled={isBundling} onChange={(event) => setJpegQuality(item.id, Number(event.target.value))} aria-label={`JPEG quality for item ${index + 1}`} /></label>}
+                  <div className="batch-resize-control"><label><input type="checkbox" checked={resizeEnabled} disabled={isBundling} onChange={(event) => setResizeMaxLongEdge(item.id, event.target.checked ? Math.min(1920, Math.max(item.inspection!.width, item.inspection!.height)) : null)} /> Resize before ZIP</label>{resizeEnabled && <><label>Max long edge <input type="number" inputMode="numeric" min={1} max={Math.max(item.inspection!.width, item.inspection!.height)} value={item.resizeMaxLongEdge ?? ""} disabled={isBundling} onChange={(event) => setResizeMaxLongEdge(item.id, Number(event.target.value))} /> px</label><small>Output: {resizeOutput?.width} × {resizeOutput?.height}px · proportions preserved</small></>}</div>
                 </>}
               </div>
               <div className="batch-item-actions">
