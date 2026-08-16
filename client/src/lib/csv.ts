@@ -219,6 +219,15 @@ export function findDuplicateGroups(rows: string[][], selectedColumns: number[] 
     .sort((a, b) => b.count - a.count || a.rows[0] - b.rows[0]);
 }
 
+/** Returns matching header indexes for a local, case-insensitive column search without reading data rows. */
+export function findCsvColumnIndexes(headers: readonly string[], query: string): number[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  return headers
+    .map((header, index) => ({ index, label: header.trim() || `Column ${index + 1}` }))
+    .filter(({ label }) => !normalizedQuery || label.toLocaleLowerCase().includes(normalizedQuery))
+    .map(({ index }) => index);
+}
+
 function detectFormulaRisks(headers: string[], rows: string[][]): FormulaRisk[] {
   const risks: FormulaRisk[] = [];
   rows.forEach((row, rowIndex) => {

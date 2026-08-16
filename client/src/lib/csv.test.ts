@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only CSV engine. */
 import { describe, expect, it } from "vitest";
-import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, parseDelimited, previewSafeCsvCopy } from "./csv";
+import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, findCsvColumnIndexes, parseDelimited, previewSafeCsvCopy } from "./csv";
 import { createSavedCsvExclusionRule, matchingCsvRuleColumns, readSavedCsvExclusionRules, writeSavedCsvExclusionRules } from "./csvExclusionRules";
 
 describe("parseDelimited", () => {
@@ -81,5 +81,16 @@ describe("analyzeText", () => {
     writeSavedCsvExclusionRules(storage, [rule!]);
     expect(readSavedCsvExclusionRules(storage)).toMatchObject([{ id: "rule-1", name: "Contact fields", headers: ["email", "contact_phone"] }]);
     expect(matchingCsvRuleColumns(["customer_id", "EMAIL", "contact_phone", "notes"], rule!)).toEqual([1, 2]);
+  });
+
+  it("finds column labels locally without changing their original indexes", () => {
+    const headers = ["Customer ID", "Email", "contact_phone", "Notes"];
+    expect(findCsvColumnIndexes(headers, "PHONE")).toEqual([2]);
+    expect(findCsvColumnIndexes(headers, "")).toEqual([0, 1, 2, 3]);
+    expect(findCsvColumnIndexes(headers, "missing")).toEqual([]);
+  });
+
+  it("finds an unnamed header through its local fallback label", () => {
+    expect(findCsvColumnIndexes(["", "Email"], "column 1")).toEqual([0]);
   });
 });

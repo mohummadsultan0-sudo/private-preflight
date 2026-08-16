@@ -117,6 +117,7 @@ export function ImageInspector() {
           )}
         </div>
       </div>
+      <section className="image-flow-ledger" aria-labelledby="image-flow-title"><div><span className="eyebrow"><span>PATH / 05</span> Local decision record</span><h2 id="image-flow-title">A short path before an image travels.</h2><p>The browser reads the selected image, shows available local signals, then leaves the sharing decision and any clean-copy download under your control.</p></div><ol><li><span>01</span><strong>Add locally</strong><p>Choose an image from this device. No upload path opens.</p></li><li><span>02</span><strong>Review evidence</strong><p>Check file facts and available metadata before sharing.</p></li><li><span>03</span><strong>Decide explicitly</strong><p>Keep the original or make a local clean copy when offered.</p></li></ol></section>
     </section>
   );
 }

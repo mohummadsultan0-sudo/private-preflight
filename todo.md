@@ -193,3 +193,9 @@
 - [x] Implement bounded before/after CSV previews that show retained columns and formula neutralization without changing the original file.
 - [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 27 tests, TypeScript, and the GitHub Pages build. Browser checks confirmed an `image-01-clean.webp` ZIP entry with WebP quality evidence, a local rule storing only `email` and `contact_phone` headers, and a 375 px layout without page-wide horizontal overflow.
 - [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
+
+## CSV column quick search
+
+- [x] Define local-only query behavior, empty-result feedback, keyboard focus, and selection persistence for large CSV header lists.
+- [x] Implement a case-insensitive quick search that filters visible column controls without altering the selected exclusion set.
+- [x] Verify deterministic filtering behavior, empty-result recovery, retained exclusions after search clearing, desktop/mobile usability, 29 tests, TypeScript, and the production build. GitHub Pages deployment remains the final release step.

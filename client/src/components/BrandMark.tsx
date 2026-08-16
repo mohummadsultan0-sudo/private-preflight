@@ -11,7 +11,8 @@ export function BrandMark({ compact = false, className = "" }: BrandMarkProps) {
       <img src={BRAND_MARK} alt="" className="brand-mark__icon" />
       {!compact && (
         <span className="brand-mark__name">
-          private <strong>preflight</strong>
+          <small>LOCAL INSPECTION SUITE</small>
+          <b>private <strong>preflight</strong></b>
         </span>
       )}
     </Link>
