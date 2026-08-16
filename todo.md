@@ -200,3 +200,11 @@
 - [x] Implement a case-insensitive quick search that filters visible column controls without altering the selected exclusion set.
 - [x] Verify deterministic filtering behavior, empty-result recovery, retained exclusions after search clearing, desktop/mobile usability, 29 tests, TypeScript, and the production build. GitHub Pages deployment remains the final release step.
 - [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
+
+## CSV column sorting, bulk selection, and keyboard focus
+
+- [x] Define local-only sort modes, visible-result bulk selection safeguards, and Ctrl/Cmd+F focus behavior within the safe-copy dialog.
+- [x] Implement alphabetical and PII-signal-first column sorting without altering the CSV source or existing exclusion selections.
+- [x] Implement one-click exclude/restore for only the search results currently visible, while retaining at least one output column.
+- [x] Implement a Ctrl/Cmd+F dialog shortcut that focuses the local column search and suppresses the browser search only while the dialog is open.
+- [x] Verify deterministic behavior, keyboard focus, empty-search recovery, A–Z and PII-first ordering, one-result bulk exclusion/restoration, 30 tests, TypeScript, and the production build. GitHub Pages deployment remains the final release step.

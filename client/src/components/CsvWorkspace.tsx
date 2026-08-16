@@ -27,6 +27,7 @@ import { Link } from "wouter";
 import {
   analyzeFile,
   CsvAnalysis,
+  CsvColumnSort,
   CsvPreflightError,
   DEMO_CSV,
   downloadLocalText,
@@ -37,6 +38,7 @@ import {
   createReport,
   createSafeCsvCopy,
   previewSafeCsvCopy,
+  sortCsvColumnIndexes,
 } from "@/lib/csv";
 import { createSavedCsvExclusionRule, matchingCsvRuleColumns, readSavedCsvExclusionRules, SavedCsvExclusionRule, writeSavedCsvExclusionRules } from "@/lib/csvExclusionRules";
 
@@ -91,6 +93,7 @@ function IssueTag({ kind, label, count, description }: { kind: string; label: st
 export function CsvWorkspace() {
   const inputRef = useRef<HTMLInputElement>(null);
   const decisionRef = useRef<HTMLDivElement>(null);
+  const columnSearchRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [pendingNonStandardFile, setPendingNonStandardFile] = useState<File | null>(null);
   const [rejectedFile, setRejectedFile] = useState<File | null>(null);
@@ -108,6 +111,7 @@ export function CsvWorkspace() {
   const [ruleName, setRuleName] = useState("Contact fields");
   const [ruleNotice, setRuleNotice] = useState<string | null>(null);
   const [columnSearchQuery, setColumnSearchQuery] = useState("");
+  const [columnSort, setColumnSort] = useState<CsvColumnSort>("source");
 
   const duplicateGroups = useMemo(
     () => (analysis ? findDuplicateGroups(analysis.rows, selectedColumns, matchMode) : []),
@@ -122,9 +126,17 @@ export function CsvWorkspace() {
     [analysis, neutralizeFormulaCells, safeExcludedColumns],
   );
   const visibleSafeColumnIndexes = useMemo(
-    () => (analysis ? findCsvColumnIndexes(analysis.headers, columnSearchQuery) : []),
-    [analysis, columnSearchQuery],
+    () => analysis ? sortCsvColumnIndexes(
+      analysis.headers,
+      findCsvColumnIndexes(analysis.headers, columnSearchQuery),
+      analysis.piiSignals.map((signal) => signal.column - 1),
+      columnSort,
+    ) : [],
+    [analysis, columnSearchQuery, columnSort],
   );
+  const allVisibleExcluded = visibleSafeColumnIndexes.length > 0 && visibleSafeColumnIndexes.every((column) => safeExcludedColumns.includes(column));
+  const visibleMissingColumns = visibleSafeColumnIndexes.filter((column) => !safeExcludedColumns.includes(column));
+  const canExcludeVisibleColumns = Boolean(analysis) && safeExcludedColumns.length + visibleMissingColumns.length <= (analysis?.headers.length ?? 0) - 1;
 
   const localSupported = typeof window !== "undefined" && "File" in window && "FileReader" in window;
 
@@ -144,6 +156,17 @@ export function CsvWorkspace() {
     catch { setRuleNotice("Saved header rules are unavailable in this browser. This file remains local in the current tab."); }
   }, []);
 
+  useEffect(() => {
+    const focusLocalColumnSearch = (event: KeyboardEvent) => {
+      if (!showSafeExport || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "f") return;
+      event.preventDefault();
+      columnSearchRef.current?.focus();
+      columnSearchRef.current?.select();
+    };
+    window.addEventListener("keydown", focusLocalColumnSearch);
+    return () => window.removeEventListener("keydown", focusLocalColumnSearch);
+  }, [showSafeExport]);
+
   const reset = () => {
     setFile(null);
     setAnalysis(null);
@@ -157,6 +180,7 @@ export function CsvWorkspace() {
     setNeutralizeFormulaCells(true);
     setRuleNotice(null);
     setColumnSearchQuery("");
+    setColumnSort("source");
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -176,6 +200,7 @@ export function CsvWorkspace() {
       setNeutralizeFormulaCells(true);
       setRuleNotice(null);
       setColumnSearchQuery("");
+      setColumnSort("source");
     } catch (caught) {
       const message = caught instanceof CsvPreflightError ? caught.message : "The browser could not complete this inspection. Your file was not uploaded. Reset and try again.";
       setError(message);
@@ -209,6 +234,19 @@ export function CsvWorkspace() {
   };
   const toggleSafeExcludedColumn = (column: number) => {
     setSafeExcludedColumns((current) => (current.includes(column) ? current.filter((item) => item !== column) : [...current, column]));
+  };
+  const toggleVisibleSafeExcludedColumns = () => {
+    if (!analysis || visibleSafeColumnIndexes.length === 0) return;
+    if (allVisibleExcluded) {
+      const visibleSet = new Set(visibleSafeColumnIndexes);
+      setSafeExcludedColumns((current) => current.filter((column) => !visibleSet.has(column)));
+      return;
+    }
+    if (!canExcludeVisibleColumns) {
+      setRuleNotice("Keep at least one output column. Narrow the search or restore another excluded field before using this bulk action.");
+      return;
+    }
+    setSafeExcludedColumns((current) => Array.from(new Set([...current, ...visibleSafeColumnIndexes])).sort((left, right) => left - right));
   };
   const persistRules = (nextRules: SavedCsvExclusionRule[], notice: string) => {
     setSavedExclusionRules(nextRules);
@@ -415,7 +453,7 @@ export function CsvWorkspace() {
             <button type="button" className="dialog-close" onClick={() => setShowSafeExport(false)} aria-label="Close export dialog"><X /></button>
             <span className="eyebrow"><span>REVIEW</span> Local sharing copy</span><h2 id="export-title">Prepare a privacy-safe CSV copy.</h2><p>Exclude fields you do not want to share, then optionally add a leading tab to formula-like cells. The copy is created in this browser; your original file is not modified or uploaded.</p>
             <div className="safe-copy-summary"><span>{safeCopy?.retainedColumns.length ?? 0} columns kept</span><span>{safeCopy?.excludedColumns.length ?? 0} excluded</span><span>{safeCopy?.neutralizedCellCount ?? 0} formula-like cells neutralized</span></div>
-            <fieldset className="safe-copy-columns"><legend>Columns to exclude from the new copy</legend><p>Selecting a field removes its header and every value under it. Keep at least one column.</p><div className="column-quick-search"><label htmlFor="safe-copy-column-search"><Search aria-hidden="true" /><span>Find a column</span><input id="safe-copy-column-search" type="search" value={columnSearchQuery} onChange={(event) => setColumnSearchQuery(event.target.value)} placeholder="e.g. email or phone" autoComplete="off" /></label>{columnSearchQuery && <button type="button" onClick={() => setColumnSearchQuery("")} aria-label="Clear column search"><X aria-hidden="true" /> Clear</button>}<small aria-live="polite">{visibleSafeColumnIndexes.length} of {analysis.headers.length} columns shown{columnSearchQuery ? ` for “${columnSearchQuery}”` : ""}.</small></div><div className="safe-copy-columns__list">{visibleSafeColumnIndexes.length > 0 ? visibleSafeColumnIndexes.map((index) => { const header = analysis.headers[index]; return <label key={`${header}-${index}`}><input type="checkbox" checked={safeExcludedColumns.includes(index)} onChange={() => toggleSafeExcludedColumn(index)} disabled={safeExcludedColumns.length === analysis.headers.length - 1 && !safeExcludedColumns.includes(index)} /> <span>{header.trim() || `Column ${index + 1}`}</span>{analysis.piiSignals.some((signal) => signal.column === index + 1) && <small>PII signal</small>}</label>; }) : <p className="safe-copy-columns__empty" role="status">No column labels match this local search. Your current exclusion choices are unchanged.</p>}</div></fieldset>
+            <fieldset className="safe-copy-columns"><legend>Columns to exclude from the new copy</legend><p>Selecting a field removes its header and every value under it. Keep at least one column.</p><div className="column-quick-search"><label htmlFor="safe-copy-column-search"><Search aria-hidden="true" /><span>Find a column</span><input ref={columnSearchRef} id="safe-copy-column-search" type="search" value={columnSearchQuery} onChange={(event) => setColumnSearchQuery(event.target.value)} placeholder="e.g. email or phone" autoComplete="off" aria-describedby="safe-copy-search-status safe-copy-search-shortcut" /></label>{columnSearchQuery && <button type="button" onClick={() => setColumnSearchQuery("")} aria-label="Clear column search"><X aria-hidden="true" /> Clear</button>}<small id="safe-copy-search-status" aria-live="polite">{visibleSafeColumnIndexes.length} of {analysis.headers.length} columns shown{columnSearchQuery ? ` for “${columnSearchQuery}”` : ""}.</small><kbd id="safe-copy-search-shortcut">Ctrl/⌘ + F</kbd></div><div className="column-quick-actions"><label>Order <select value={columnSort} onChange={(event) => setColumnSort(event.target.value as CsvColumnSort)}><option value="source">File order</option><option value="alphabetical">A–Z</option><option value="pii_first">PII signals first</option></select></label><Button type="button" variant="outline" onClick={toggleVisibleSafeExcludedColumns} disabled={visibleSafeColumnIndexes.length === 0 || (!allVisibleExcluded && !canExcludeVisibleColumns)}>{allVisibleExcluded ? "Restore visible" : canExcludeVisibleColumns ? "Exclude visible" : "Keep one column"}</Button></div><div className="safe-copy-columns__list">{visibleSafeColumnIndexes.length > 0 ? visibleSafeColumnIndexes.map((index) => { const header = analysis.headers[index]; return <label key={`${header}-${index}`}><input type="checkbox" checked={safeExcludedColumns.includes(index)} onChange={() => toggleSafeExcludedColumn(index)} disabled={safeExcludedColumns.length === analysis.headers.length - 1 && !safeExcludedColumns.includes(index)} /> <span>{header.trim() || `Column ${index + 1}`}</span>{analysis.piiSignals.some((signal) => signal.column === index + 1) && <small>PII signal</small>}</label>; }) : <p className="safe-copy-columns__empty" role="status">No column labels match this local search. Your current exclusion choices are unchanged.</p>}</div></fieldset>
             <section className="saved-exclusion-rules" aria-labelledby="saved-rules-title"><div><span className="eyebrow"><span>REUSE</span> Browser-only header rules</span><h3 id="saved-rules-title">Save this column choice for another CSV.</h3><p>Rules store selected header labels only in this browser. They never store this file name, row values, or file bytes.</p></div><div className="saved-exclusion-rules__save"><label>Rule name <input value={ruleName} maxLength={48} onChange={(event) => setRuleName(event.target.value)} placeholder="e.g. Contact fields" /></label><Button type="button" variant="outline" onClick={saveExclusionRule}><BookmarkPlus aria-hidden="true" /> Save local rule</Button></div>{savedExclusionRules.length > 0 ? <ul>{savedExclusionRules.map((rule) => <li key={rule.id}><div><strong>{rule.name}</strong><small>{rule.headers.join(" · ")}</small></div><span><Button type="button" variant="ghost" onClick={() => applyExclusionRule(rule)}>Apply</Button><button type="button" onClick={() => deleteExclusionRule(rule.id)} aria-label={`Delete local rule ${rule.name}`} title="Delete local rule"><Trash2 aria-hidden="true" /></button></span></li>)}</ul> : <p className="saved-exclusion-rules__empty">No local header rules saved yet.</p>}{ruleNotice && <p className="saved-exclusion-rules__notice" role="status">{ruleNotice}</p>}</section>
             <label className="safe-copy-formula"><input type="checkbox" checked={neutralizeFormulaCells} onChange={(event) => setNeutralizeFormulaCells(event.target.checked)} /><span>Neutralize formula-like cells</span><small>Adds a leading tab to values that start with spreadsheet-interpretable characters. This changes copied values and is not universal protection.</small></label>
             {safePreview && <section className="safe-copy-preview" aria-labelledby="safe-preview-title"><div className="safe-copy-preview__heading"><span className="eyebrow"><span>VERIFY</span> First {safePreview.rowLimit} local data rows</span><h3 id="safe-preview-title">Compare before and after filtering.</h3><p>Visible only in this browser dialog. “↹” marks a leading tab added for formula neutralization.</p></div><div className="safe-copy-preview__tables"><article><h4>Original local rows</h4><div className="data-table-wrap"><table><thead><tr>{safePreview.sourceHeaders.map((header, index) => <th key={`${header}-${index}`}>{header || `Column ${index + 1}`}</th>)}</tr></thead><tbody>{safePreview.sourceRows.map((row, rowIndex) => <tr key={rowIndex}>{safePreview.sourceHeaders.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{previewCell(row[columnIndex] ?? "")}</td>)}</tr>)}</tbody></table></div></article><article><h4>Privacy-safe copy</h4><div className="data-table-wrap"><table><thead><tr>{safePreview.outputHeaders.map((header, index) => <th key={`${header}-${index}`}>{header || `Column ${index + 1}`}</th>)}</tr></thead><tbody>{safePreview.outputRows.map((row, rowIndex) => <tr key={rowIndex}>{safePreview.outputHeaders.map((_, columnIndex) => <td key={columnIndex} title={row[columnIndex] ?? ""}>{previewCell(row[columnIndex] ?? "")}</td>)}</tr>)}</tbody></table></div></article></div></section>}

@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only CSV engine. */
 import { describe, expect, it } from "vitest";
-import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, findCsvColumnIndexes, parseDelimited, previewSafeCsvCopy } from "./csv";
+import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, findCsvColumnIndexes, parseDelimited, previewSafeCsvCopy, sortCsvColumnIndexes } from "./csv";
 import { createSavedCsvExclusionRule, matchingCsvRuleColumns, readSavedCsvExclusionRules, writeSavedCsvExclusionRules } from "./csvExclusionRules";
 
 describe("parseDelimited", () => {
@@ -92,5 +92,13 @@ describe("analyzeText", () => {
 
   it("finds an unnamed header through its local fallback label", () => {
     expect(findCsvColumnIndexes(["", "Email"], "column 1")).toEqual([0]);
+  });
+
+  it("sorts only the visible column indexes by label or known PII-signal priority", () => {
+    const headers = ["Notes", "email", "Amount", "contact_phone"];
+    const visible = [0, 1, 2, 3];
+    expect(sortCsvColumnIndexes(headers, visible, [1, 3], "alphabetical")).toEqual([2, 3, 1, 0]);
+    expect(sortCsvColumnIndexes(headers, visible, [1, 3], "pii_first")).toEqual([3, 1, 2, 0]);
+    expect(sortCsvColumnIndexes(headers, [3, 1], [1, 3], "source")).toEqual([1, 3]);
   });
 });
