@@ -192,4 +192,4 @@
 - [x] Implement locally persisted named CSV exclusion rules with clear save, apply, and delete recovery controls.
 - [x] Implement bounded before/after CSV previews that show retained columns and formula neutralization without changing the original file.
 - [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 27 tests, TypeScript, and the GitHub Pages build. Browser checks confirmed an `image-01-clean.webp` ZIP entry with WebP quality evidence, a local rule storing only `email` and `contact_phone` headers, and a 375 px layout without page-wide horizontal overflow.
-- [ ] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
+- [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
