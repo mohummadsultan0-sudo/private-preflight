@@ -175,3 +175,12 @@
 - [x] Show selected output dimensions, actual local size comparison, and retain existing clear recovery messages for unsupported or failed conversions.
 - [x] Add deterministic resize/report tests; verify single-image 3200×2000 → 1280×800 preview and batch 3000×2000 → 1920×1280 ZIP output; verify phone layout; run TypeScript, 20 deterministic tests, and the GitHub Pages build.
 - [x] Publish the update to GitHub Pages and validate that no Manus-hosted dependency is introduced.
+
+## Safe CSV copy, anonymous image names, and orientation correction
+
+- [x] Define privacy-safe contracts for column exclusion, formula neutralization, anonymous image output names, and orientation correction after EXIF removal.
+- [x] Implement a browser-only CSV safe-copy workflow that lets users remove selected columns and neutralize formula-like cells before download.
+- [x] Implement optional anonymous image output names for single images and ZIP batch items without exposing original names in output paths.
+- [x] Implement EXIF orientation correction through the local clean-copy canvas before metadata is removed, with a clear result disclosure.
+- [x] Add deterministic tests and verify error recovery, desktop/mobile controls, 24 tests, TypeScript, and the GitHub Pages build.
+- [ ] Publish and validate the updated GitHub Pages release without adding a server upload or Manus-hosted dependency.

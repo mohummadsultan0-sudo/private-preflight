@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only image metadata parser. */
 import { describe, expect, it } from "vitest";
-import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, outputDimensionsForResize, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
+import { canCreateCleanCopy, clampJpegQuality, CLEAN_JPEG_QUALITY, cleanCopyFileName, extractExif, JPEG_QUALITY_MAX, JPEG_QUALITY_MIN, needsOrientationCorrection, orientationCorrectedDimensions, outputDimensionsForResize, parseTiffExif, readAncillaryMetadata, supportedImageType } from "./image";
 
 function withExifTiff(): Uint8Array {
   const bytes = new Uint8Array(50);
@@ -51,6 +51,7 @@ describe("local image metadata", () => {
     expect(canCreateCleanCopy("gif", "none", { hasIccProfile: true, hasTextComments: true, hasXmp: true })).toBe(false);
     expect(cleanCopyFileName("holiday.photo.JPG")).toBe("holiday.photo-clean.png");
     expect(cleanCopyFileName("holiday.photo.JPG", "jpeg")).toBe("holiday.photo-clean.jpg");
+    expect(cleanCopyFileName("holiday.photo.JPG", "jpeg", true)).toBe("private-preflight-image-clean.jpg");
     expect(CLEAN_JPEG_QUALITY).toBe(0.9);
   });
 
@@ -67,5 +68,12 @@ describe("local image metadata", () => {
     expect(outputDimensionsForResize(800, 600, { maxWidth: 1280, maxHeight: 1280 })).toEqual({ width: 800, height: 600, resized: false });
     expect(outputDimensionsForResize(800, 600, { maxWidth: 640, maxHeight: 640, exact: true })).toEqual({ width: 640, height: 640, resized: true });
     expect(outputDimensionsForResize(800, 600, null)).toEqual({ width: 800, height: 600, resized: false });
+  });
+
+  it("identifies and normalizes EXIF orientations that change visible pixels", () => {
+    expect(needsOrientationCorrection(1)).toBe(false);
+    expect(needsOrientationCorrection(6)).toBe(true);
+    expect(orientationCorrectedDimensions(4000, 3000, 6)).toEqual({ width: 3000, height: 4000 });
+    expect(orientationCorrectedDimensions(4000, 3000, 3)).toEqual({ width: 4000, height: 3000 });
   });
 });

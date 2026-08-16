@@ -15,6 +15,14 @@ export const RESIZE_LONG_EDGE_OPTIONS = [2560, 1920, 1280, 800] as const;
 export type ResizeOptions = { maxWidth?: number; maxHeight?: number; exact?: boolean };
 export type OutputDimensions = { width: number; height: number; resized: boolean };
 
+export function needsOrientationCorrection(orientation?: number): boolean {
+  return Boolean(orientation && orientation >= 2 && orientation <= 8);
+}
+
+export function orientationCorrectedDimensions(width: number, height: number, orientation?: number): { width: number; height: number } {
+  return orientation && orientation >= 5 && orientation <= 8 ? { width: height, height: width } : { width, height };
+}
+
 export interface AncillaryMetadata {
   hasIccProfile: boolean;
   hasTextComments: boolean;
@@ -375,14 +383,35 @@ type CanvasSource = {
   source: CanvasImageSource;
   width: number;
   height: number;
+  decoderAppliesOrientation: boolean;
   release: () => void;
 };
+
+function readJpegRawDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
+  const startOfFrame = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+  let cursor = 2;
+  while (cursor + 8 <= bytes.length) {
+    if (bytes[cursor] !== 0xff) break;
+    while (bytes[cursor] === 0xff) cursor += 1;
+    const marker = bytes[cursor++];
+    if (marker === 0xd9 || marker === 0xda) break;
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    const length = (bytes[cursor] << 8) | bytes[cursor + 1];
+    if (length < 2 || cursor + length > bytes.length) break;
+    if (startOfFrame.has(marker) && length >= 7) {
+      return { height: (bytes[cursor + 3] << 8) | bytes[cursor + 4], width: (bytes[cursor + 5] << 8) | bytes[cursor + 6] };
+    }
+    cursor += length;
+  }
+  return null;
+}
 
 async function decodeForCanvas(file: File): Promise<CanvasSource> {
   if ("createImageBitmap" in window) {
     try {
-      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-      return { source: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close() };
+      const bitmap = await createImageBitmap(file, { imageOrientation: "none" });
+      return { source: bitmap, width: bitmap.width, height: bitmap.height, decoderAppliesOrientation: false, release: () => bitmap.close() };
     } catch {
       // Fall back to an Image element for browsers without a compatible bitmap decoder.
     }
@@ -390,13 +419,28 @@ async function decodeForCanvas(file: File): Promise<CanvasSource> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
-    image.onload = () => resolve({ source: image, width: image.naturalWidth, height: image.naturalHeight, release: () => URL.revokeObjectURL(url) });
+    image.onload = () => resolve({ source: image, width: image.naturalWidth, height: image.naturalHeight, decoderAppliesOrientation: true, release: () => URL.revokeObjectURL(url) });
     image.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new ImageCleanError("clean_failed", "The browser could not create a clean copy from this image."));
     };
     image.src = url;
   });
+}
+
+function drawOrientationCorrectedImage(context: CanvasRenderingContext2D, source: CanvasImageSource, sourceWidth: number, sourceHeight: number, orientation: number, outputWidth: number, outputHeight: number): void {
+  const visible = orientationCorrectedDimensions(sourceWidth, sourceHeight, orientation);
+  context.save();
+  context.scale(outputWidth / visible.width, outputHeight / visible.height);
+  if (orientation === 2) context.transform(-1, 0, 0, 1, sourceWidth, 0);
+  if (orientation === 3) context.transform(-1, 0, 0, -1, sourceWidth, sourceHeight);
+  if (orientation === 4) context.transform(1, 0, 0, -1, 0, sourceHeight);
+  if (orientation === 5) context.transform(0, 1, 1, 0, 0, 0);
+  if (orientation === 6) context.transform(0, 1, -1, 0, sourceHeight, 0);
+  if (orientation === 7) context.transform(0, -1, -1, 0, sourceHeight, sourceWidth);
+  if (orientation === 8) context.transform(0, -1, 1, 0, 0, sourceWidth);
+  context.drawImage(source, 0, 0, sourceWidth, sourceHeight);
+  context.restore();
 }
 
 function canvasToCleanBlob(canvas: HTMLCanvasElement, outputFormat: CleanCopyFormat, jpegQuality: number): Promise<Blob> {
@@ -439,9 +483,17 @@ export async function createExifFreeImage(file: File, outputFormat: CleanCopyFor
   if (type === "gif") throw new ImageCleanError("not_cleanable", "GIF clean copies are not available because this release does not re-encode animated images.");
   let decoded: CanvasSource | null = null;
   try {
-    decoded = await decodeForCanvas(file);
+    const [nextDecoded, sourceBytes] = await Promise.all([decodeForCanvas(file), file.arrayBuffer()]);
+    decoded = nextDecoded;
     if (!decoded.width || !decoded.height) throw new ImageCleanError("clean_failed", "The browser could not read pixels for the clean copy.");
-    const outputDimensions = outputDimensionsForResize(decoded.width, decoded.height, resizeOptions);
+    const bytes = new Uint8Array(sourceBytes);
+    const sourceOrientation = extractExif(bytes, type).exif.orientation;
+    const rawDimensions = type === "jpeg" ? readJpegRawDimensions(bytes) : null;
+    const orientedRawDimensions = rawDimensions ? orientationCorrectedDimensions(rawDimensions.width, rawDimensions.height, sourceOrientation) : null;
+    const decoderAlreadyAppliedOrientation = Boolean(needsOrientationCorrection(sourceOrientation) && orientedRawDimensions && decoded.width === orientedRawDimensions.width && decoded.height === orientedRawDimensions.height);
+    const shouldCorrectOrientation = !decoded.decoderAppliesOrientation && needsOrientationCorrection(sourceOrientation) && !decoderAlreadyAppliedOrientation;
+    const visibleDimensions = shouldCorrectOrientation ? orientationCorrectedDimensions(decoded.width, decoded.height, sourceOrientation) : { width: decoded.width, height: decoded.height };
+    const outputDimensions = outputDimensionsForResize(visibleDimensions.width, visibleDimensions.height, resizeOptions);
     const canvas = document.createElement("canvas");
     canvas.width = outputDimensions.width;
     canvas.height = outputDimensions.height;
@@ -451,7 +503,8 @@ export async function createExifFreeImage(file: File, outputFormat: CleanCopyFor
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, outputDimensions.width, outputDimensions.height);
     }
-    context.drawImage(decoded.source, 0, 0, outputDimensions.width, outputDimensions.height);
+    if (shouldCorrectOrientation && sourceOrientation) drawOrientationCorrectedImage(context, decoded.source, decoded.width, decoded.height, sourceOrientation, outputDimensions.width, outputDimensions.height);
+    else context.drawImage(decoded.source, 0, 0, outputDimensions.width, outputDimensions.height);
     const blob = await canvasToCleanBlob(canvas, outputFormat, jpegQuality);
     return outputFormat === "jpeg" ? await stripJpegAncillarySegments(blob) : blob;
   } catch (caught) {
@@ -466,7 +519,8 @@ export function createExifFreePng(file: File): Promise<Blob> {
   return createExifFreeImage(file, "png");
 }
 
-export function cleanCopyFileName(fileName: string, outputFormat: CleanCopyFormat = "png"): string {
+export function cleanCopyFileName(fileName: string, outputFormat: CleanCopyFormat = "png", anonymize = false): string {
+  if (anonymize) return `private-preflight-image-clean.${outputFormat === "jpeg" ? "jpg" : "png"}`;
   const baseName = fileName.replace(/\.[^.]+$/, "") || "image";
   return `${baseName}-clean.${outputFormat === "jpeg" ? "jpg" : "png"}`;
 }

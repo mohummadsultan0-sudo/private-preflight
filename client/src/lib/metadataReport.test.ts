@@ -64,4 +64,14 @@ describe("local metadata reports", () => {
     expect(report).toContain('"width": 20');
     expect(report).not.toContain("should-not-export");
   });
+
+  it("records anonymous output naming and orientation normalization without exporting the source name", () => {
+    const orientedInspection = { ...inspection, exif: { ...inspection.exif, orientation: 6 } };
+    const csv = createMetadataCsv(orientedInspection, { ...options, anonymizeOutputName: true }, ["output_name", "orientation_correction"]);
+    expect(csv.split("\r\n")).toEqual(["section,field,value,clean_copy_effect", "clean_copy,output_name,anonymous,source-name-not-exported", "clean_copy,orientation_correction,normalized-locally,source-orientation-not-exported"]);
+    const report = createMetadataJson(orientedInspection, { ...options, anonymizeOutputName: true });
+    expect(report).toContain('"outputName": "anonymous"');
+    expect(report).toContain('"orientationCorrection": "normalized-locally"');
+    expect(report).not.toContain("should-not-export");
+  });
 });

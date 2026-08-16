@@ -1,6 +1,6 @@
 /** Deterministic verification for the browser-only CSV engine. */
 import { describe, expect, it } from "vitest";
-import { analyzeText, createSpreadsheetSafeCsv, detectDelimiter, parseDelimited } from "./csv";
+import { analyzeText, createSafeCsvCopy, createSpreadsheetSafeCsv, detectDelimiter, parseDelimited } from "./csv";
 
 describe("parseDelimited", () => {
   it("keeps commas, escaped quotes, and newlines inside quoted cells", () => {
@@ -45,5 +45,21 @@ describe("analyzeText", () => {
     const reparsed = parseDelimited(exported, ",");
     expect(reparsed.issues).toHaveLength(0);
     expect(reparsed.rows).toEqual([["name", "notes"], ["Ada", '\t=HYPERLINK("https://example.com","Review")']]);
+  });
+
+  it("creates a sharing copy with chosen columns removed and formula-like cells neutralized", () => {
+    const analysis = analyzeText('name,email,notes\nAda,ada@example.com,"=HYPERLINK(""https://example.com"",""Review"")"\nGrace,grace@example.com,42', "fixture.csv");
+    const safeCopy = createSafeCsvCopy(analysis, { excludedColumns: [1], neutralizeFormulaCells: true });
+    expect(safeCopy.retainedColumns).toEqual([0, 2]);
+    expect(safeCopy.excludedColumns).toEqual([1]);
+    expect(safeCopy.neutralizedCellCount).toBe(1);
+    expect(parseDelimited(safeCopy.contents, ",").rows).toEqual([["name", "notes"], ["Ada", '\t=HYPERLINK("https://example.com","Review")'], ["Grace", "42"]]);
+  });
+
+  it("can leave formula-like values unchanged when the user explicitly turns neutralization off", () => {
+    const analysis = analyzeText("name,value\nAda,=1+1", "fixture.csv");
+    const safeCopy = createSafeCsvCopy(analysis, { neutralizeFormulaCells: false });
+    expect(safeCopy.neutralizedCellCount).toBe(0);
+    expect(safeCopy.contents).toContain("=1+1");
   });
 });

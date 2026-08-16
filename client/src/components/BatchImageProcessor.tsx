@@ -33,7 +33,7 @@ type BatchReportEntry = { itemId: string; inspection: ImageInspection; options: 
 const formatBytes = (bytes: number) => bytes < 1024 ? `${bytes} B` : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 const safeItemId = (index: number) => `image-${String(index + 1).padStart(2, "0")}`;
 const isCleanEligible = (item: BatchItem) => item.status === "ready" && Boolean(item.inspection) && canCreateCleanCopy(item.inspection!.format, item.inspection!.metadataState, item.inspection!.ancillaryMetadata);
-const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, resizeOptions: item.resizeMaxLongEdge ? { maxWidth: item.resizeMaxLongEdge, maxHeight: item.resizeMaxLongEdge } : null, estimatedBytes: null, cleanCopyOffered: true });
+const reportOptionsFor = (item: BatchItem): ReportOptions => ({ cleanFormat: item.outputFormat ?? "jpeg", jpegQuality: item.jpegQuality ?? DEFAULT_JPEG_QUALITY, resizeOptions: item.resizeMaxLongEdge ? { maxWidth: item.resizeMaxLongEdge, maxHeight: item.resizeMaxLongEdge } : null, estimatedBytes: null, cleanCopyOffered: true, anonymizeOutputName: true });
 const toSessionItem = (item: BatchItem): SessionBatchItem | null => {
   if (item.status === "reading") return null;
   return { ...item, status: item.status, bundleStage: item.status === "ready" ? "queued" : item.bundleStage === "failed" ? "failed" : undefined };
@@ -240,7 +240,7 @@ export function BatchImageProcessor() {
       }
       if (!completedEntries.length) throw new Error("No eligible image could be cleaned locally, so a ZIP bundle was not created.");
       zip.file("reports/batch-metadata.csv", `\uFEFF${createCombinedBatchCsv(completedEntries, selectedCombinedFields)}`);
-      zip.file("README.txt", "Private Preflight local batch bundle. Originals and raw metadata are not included. Each clean image uses its selected browser-generated JPEG or PNG format, with paired JSON and CSV signal reports.");
+      zip.file("README.txt", "Private Preflight local batch bundle. Originals, raw metadata, and source filenames are not included. Each clean image uses an anonymous ordinal filename, its selected browser-generated JPEG or PNG format, local EXIF orientation normalization when required, and paired JSON and CSV signal reports.");
       setArchiveStage("finalizing");
       setBundleProgress({ current: completedEntries.length, total: eligible.length, currentName: "Writing local archive" });
       const bundle = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
@@ -260,7 +260,7 @@ export function BatchImageProcessor() {
       <div>
         <span className="eyebrow"><span>ADD / BATCH</span> Local queue</span>
         <h2 id="batch-title">Review several images before sharing.</h2>
-        <p>Up to 8 images and 40 MB total. Review local facts, choose an output, then decide whether to create an evidence bundle.</p>
+        <p>Up to 8 images and 40 MB total. Clean ZIP names are anonymous; when EXIF indicates rotation, visible pixels are normalized locally before metadata is removed.</p>
       </div>
       <Button variant="outline" disabled={isBundling || isSessionRestoring} onClick={() => setOpen((value) => !value)}><Images aria-hidden="true" /> {open ? "Close batch" : "Process a batch"}</Button>
     </div>

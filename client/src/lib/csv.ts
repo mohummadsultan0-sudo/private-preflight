@@ -52,6 +52,18 @@ export interface CsvAnalysis {
   analyzedAt: string;
 }
 
+export interface SafeCsvCopyOptions {
+  excludedColumns?: readonly number[];
+  neutralizeFormulaCells?: boolean;
+}
+
+export interface SafeCsvCopyResult {
+  contents: string;
+  retainedColumns: number[];
+  excludedColumns: number[];
+  neutralizedCellCount: number;
+}
+
 export class CsvPreflightError extends Error {
   constructor(
     public readonly code: "file_too_large" | "empty_file" | "binary_file" | "read_failed",
@@ -356,6 +368,21 @@ export function createSpreadsheetSafeCsv(analysis: CsvAnalysis): string {
         .join(analysis.delimiter),
     )
     .join("\r\n");
+}
+
+/** Creates a deliberate, browser-only sharing copy. Source file bytes and the original File object are never modified. */
+export function createSafeCsvCopy(analysis: CsvAnalysis, options: SafeCsvCopyOptions = {}): SafeCsvCopyResult {
+  const excludedColumns = Array.from(new Set(options.excludedColumns ?? [])).filter((column) => Number.isInteger(column) && column >= 0 && column < analysis.headers.length).sort((a, b) => a - b);
+  const excludedSet = new Set(excludedColumns);
+  const retainedColumns = analysis.headers.map((_, index) => index).filter((index) => !excludedSet.has(index));
+  let neutralizedCellCount = 0;
+  const rows = [analysis.headers, ...analysis.rows];
+  const contents = rows.map((row) => retainedColumns.map((columnIndex) => {
+    const value = row[columnIndex] ?? "";
+    const transformed = options.neutralizeFormulaCells && FORMULA_START.test(value) ? (neutralizedCellCount += 1, `\t${value}`) : value;
+    return escapeCell(transformed, analysis.delimiter);
+  }).join(analysis.delimiter)).join("\r\n");
+  return { contents, retainedColumns, excludedColumns, neutralizedCellCount };
 }
 
 export function createReport(analysis: CsvAnalysis): string {

@@ -31,7 +31,7 @@ import {
   MatchMode,
   MAX_FILE_BYTES,
   createReport,
-  createSpreadsheetSafeCsv,
+  createSafeCsvCopy,
 } from "@/lib/csv";
 
 type Stage = "idle" | "reading" | "inspecting" | "complete" | "error";
@@ -91,10 +91,16 @@ export function CsvWorkspace() {
   const [selectedColumns, setSelectedColumns] = useState<number[]>([]);
   const [matchMode, setMatchMode] = useState<MatchMode>("normalized");
   const [showSafeExport, setShowSafeExport] = useState(false);
+  const [safeExcludedColumns, setSafeExcludedColumns] = useState<number[]>([]);
+  const [neutralizeFormulaCells, setNeutralizeFormulaCells] = useState(true);
 
   const duplicateGroups = useMemo(
     () => (analysis ? findDuplicateGroups(analysis.rows, selectedColumns, matchMode) : []),
     [analysis, selectedColumns, matchMode],
+  );
+  const safeCopy = useMemo(
+    () => (analysis ? createSafeCsvCopy(analysis, { excludedColumns: safeExcludedColumns, neutralizeFormulaCells }) : null),
+    [analysis, neutralizeFormulaCells, safeExcludedColumns],
   );
 
   const localSupported = typeof window !== "undefined" && "File" in window && "FileReader" in window;
@@ -119,6 +125,8 @@ export function CsvWorkspace() {
     setRejectedFile(null);
     setResultView("overview");
     setSelectedColumns([]);
+    setSafeExcludedColumns([]);
+    setNeutralizeFormulaCells(true);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -134,6 +142,8 @@ export function CsvWorkspace() {
       setAnalysis(nextAnalysis);
       setStage("complete");
       setResultView("overview");
+      setSafeExcludedColumns([]);
+      setNeutralizeFormulaCells(true);
     } catch (caught) {
       const message = caught instanceof CsvPreflightError ? caught.message : "The browser could not complete this inspection. Your file was not uploaded. Reset and try again.";
       setError(message);
@@ -165,6 +175,9 @@ export function CsvWorkspace() {
   const toggleColumn = (column: number) => {
     setSelectedColumns((current) => (current.includes(column) ? current.filter((item) => item !== column) : [...current, column]));
   };
+  const toggleSafeExcludedColumn = (column: number) => {
+    setSafeExcludedColumns((current) => (current.includes(column) ? current.filter((item) => item !== column) : [...current, column]));
+  };
 
   const downloadReport = () => {
     if (!analysis) return;
@@ -172,8 +185,8 @@ export function CsvWorkspace() {
   };
 
   const downloadSafeExport = () => {
-    if (!analysis) return;
-    downloadLocalText(createSpreadsheetSafeCsv(analysis), `${analysis.fileName.replace(/\.[^.]+$/, "")}-spreadsheet-safe.csv`, "text/csv;charset=utf-8");
+    if (!analysis || !safeCopy || safeCopy.retainedColumns.length === 0) return;
+    downloadLocalText(safeCopy.contents, `${analysis.fileName.replace(/\.[^.]+$/, "")}-privacy-safe.csv`, "text/csv;charset=utf-8");
     setShowSafeExport(false);
   };
 
@@ -276,7 +289,7 @@ export function CsvWorkspace() {
         <div className="result-stack" aria-live="polite">
           <header className="result-header">
             <div className="result-header__file"><FileCheck2 aria-hidden="true" /><div><span>LOCAL INSPECTION COMPLETE</span><h2>{analysis.fileName}</h2><p>{formatBytes(analysis.fileSize)} · {analysis.encoding} · {delimiterName(analysis.delimiter)} separated</p></div></div>
-            <div className="result-header__actions"><Button variant="ghost" className="quiet-button" onClick={reset}><RotateCcw aria-hidden="true" /> Start over</Button><Button variant="outline" onClick={downloadReport}><Download aria-hidden="true" /> Report</Button></div>
+            <div className="result-header__actions"><Button variant="ghost" className="quiet-button" onClick={reset}><RotateCcw aria-hidden="true" /> Start over</Button><Button variant="outline" onClick={() => setShowSafeExport(true)}><ShieldCheck aria-hidden="true" /> Safe copy</Button><Button variant="outline" onClick={downloadReport}><Download aria-hidden="true" /> Report</Button></div>
           </header>
 
           <div className="result-grid">
@@ -349,8 +362,11 @@ export function CsvWorkspace() {
         <div className="dialog-backdrop" role="presentation" onMouseDown={() => setShowSafeExport(false)}>
           <section className="export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title" onMouseDown={(event) => event.stopPropagation()}>
             <button type="button" className="dialog-close" onClick={() => setShowSafeExport(false)} aria-label="Close export dialog"><X /></button>
-            <span className="eyebrow"><span>REVIEW</span> Local export choice</span><h2 id="export-title">This export changes {analysis.formulaRisks.length} flagged cell{analysis.formulaRisks.length === 1 ? "" : "s"}.</h2><p>It adds a tab before each detected formula-like cell. This can reduce formula interpretation in some spreadsheet workflows, but it changes the data and is not universal protection. Your original file is not modified.</p>
-            <div className="dialog-actions"><Button variant="outline" onClick={() => setShowSafeExport(false)}>Keep original only</Button><Button className="action-button" onClick={downloadSafeExport}><Download aria-hidden="true" /> Download changed copy</Button></div>
+            <span className="eyebrow"><span>REVIEW</span> Local sharing copy</span><h2 id="export-title">Prepare a privacy-safe CSV copy.</h2><p>Exclude fields you do not want to share, then optionally add a leading tab to formula-like cells. The copy is created in this browser; your original file is not modified or uploaded.</p>
+            <div className="safe-copy-summary"><span>{safeCopy?.retainedColumns.length ?? 0} columns kept</span><span>{safeCopy?.excludedColumns.length ?? 0} excluded</span><span>{safeCopy?.neutralizedCellCount ?? 0} formula-like cells neutralized</span></div>
+            <fieldset className="safe-copy-columns"><legend>Columns to exclude from the new copy</legend><p>Selecting a field removes its header and every value under it. Keep at least one column.</p><div>{analysis.headers.map((header, index) => <label key={`${header}-${index}`}><input type="checkbox" checked={safeExcludedColumns.includes(index)} onChange={() => toggleSafeExcludedColumn(index)} disabled={safeExcludedColumns.length === analysis.headers.length - 1 && !safeExcludedColumns.includes(index)} /> <span>{header.trim() || `Column ${index + 1}`}</span>{analysis.piiSignals.some((signal) => signal.column === index + 1) && <small>PII signal</small>}</label>)}</div></fieldset>
+            <label className="safe-copy-formula"><input type="checkbox" checked={neutralizeFormulaCells} onChange={(event) => setNeutralizeFormulaCells(event.target.checked)} /><span>Neutralize formula-like cells</span><small>Adds a leading tab to values that start with spreadsheet-interpretable characters. This changes copied values and is not universal protection.</small></label>
+            <div className="dialog-actions"><Button variant="outline" onClick={() => setShowSafeExport(false)}>Keep original only</Button><Button className="action-button" disabled={!safeCopy || safeCopy.retainedColumns.length === 0} onClick={downloadSafeExport}><Download aria-hidden="true" /> Download safe CSV</Button></div>
           </section>
         </div>
       )}
