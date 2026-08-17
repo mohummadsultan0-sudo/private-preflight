@@ -218,3 +218,14 @@
 - [x] Implement a PII-count-first sort mode that orders columns by descending number of local PII signal kinds and preserves source order for ties.
 - [x] Verify deterministic behavior, keyboard recovery, bulk impact copy, PII-count ordering, 30 tests, TypeScript, the production build, and a 375 px phone layout. GitHub Pages deployment remains the final release step.
 - [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
+
+## Advertising application readiness
+
+- [x] Audit the current trust, privacy, content, crawler-discovery, and advertising boundaries against the chosen ad-network readiness criteria.
+- [x] Add a transparent About & Contact page, and expand the privacy notice with advertising, cookie, consent, analytics, and browser-local processing disclosures.
+- [x] Add original, helpful guide pages for the site's core CSV and image privacy workflows, with clear internal navigation and no fabricated claims or testimonials.
+- [x] Add a consent-ready preference experience that remains inactive until a verified CMP configuration is supplied; it must not load advertising code or store advertising consent without that configuration.
+- [x] Add search-engine readiness artifacts and metadata: canonical URLs, sitemap coverage, robots directives, structured site metadata, and noindex protection for non-content routes where appropriate.
+- [x] Reserve clearly labelled, accessible advertising slots away from file selection, processing, download, error recovery, and other high-intent controls; keep them empty until approval.
+- [x] Verify desktop and mobile experience, route behaviour, semantic accessibility, privacy boundaries, TypeScript, 30 tests, production build, and GitHub Pages self-containment.
+- [ ] Publish the ready-to-apply release to Manus and GitHub Pages, then provide the external account, ownership verification, CMP, and ads.txt steps that require the site owner's credentials.

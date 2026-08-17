@@ -1,9 +1,9 @@
 /** Audit Ledger style: guidance reads like a compact field manual, with clear limits and a visible return path to the local tool. */
-import { ArrowLeft, ArrowRight, BookOpenCheck, Braces, FileWarning, LockKeyhole, ScanSearch, ShieldAlert, TableProperties } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpenCheck, Braces, FileWarning, ImageIcon, LockKeyhole, ScanSearch, ShieldAlert, TableProperties } from "lucide-react";
 import { Link } from "wouter";
 import { BrandMark } from "@/components/BrandMark";
 
-type GuideKind = "formula" | "validator" | "duplicates" | "pii";
+type GuideKind = "formula" | "validator" | "duplicates" | "pii" | "image_metadata";
 
 const guides: Record<GuideKind, { kicker: string; icon: typeof ShieldAlert; title: string; lede: string; intro: string; cards: Array<{ title: string; text: string }>; steps: string[]; note: string; source?: { label: string; href: string } }> = {
   formula: {
@@ -62,6 +62,20 @@ const guides: Record<GuideKind, { kicker: string; icon: typeof ShieldAlert; titl
     ],
     steps: ["Open your local file without uploading it to a third-party analysis service.", "Review headers and signal types in the PII signals tab.", "Decide whether each field is necessary for the next destination.", "Use the original source or an approved redaction workflow when information must be removed."],
     note: "No absence of signals can prove a file contains no sensitive data. Use this tool as a preflight prompt, not a compliance decision.",
+  },
+  image_metadata: {
+    kicker: "Image-sharing field guide",
+    icon: ImageIcon,
+    title: "Inspect a photo before it carries more than pixels.",
+    lede: "Review available metadata, dimensions, orientation, and output choices before you share an image outside the device where it was created.",
+    intro: "A photo can contain technical and descriptive information beyond what is visible. Private Preflight checks the selected supported image in the active browser tab, then can generate a new local clean copy through browser decoding and re-encoding. The original file is not changed.",
+    cards: [
+      { title: "What the inspection can reveal", text: "The image view identifies file facts, dimensions, available EXIF fields, ICC-profile signals, XMP signals, and textual-comment signals where the selected format and browser decode path make them observable." },
+      { title: "What a clean copy does", text: "The clean-copy action creates a new JPEG, PNG, or WebP file from decoded image pixels. Re-encoding is intended to omit available metadata from the generated output; it also changes the file representation." },
+      { title: "Why orientation is visible", text: "Some photos rely on EXIF orientation. When the tool can read that signal, it corrects the visible orientation in the clean copy before generating the local download." },
+    ],
+    steps: ["Open a supported image in Image Inspector and review the available evidence.", "Decide whether dimensions, output type, anonymous filename, and compression quality match the next destination.", "Read the before-and-after comparison before generating the local clean copy.", "Keep the original when you need provenance, editing flexibility, or an exact byte-for-byte record."],
+    note: "A clean copy cannot guarantee removal of every possible embedded signal in every format, browser, or downstream platform. Review the generated file for the use case that matters to you.",
   },
 };
 

@@ -4,9 +4,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
 import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { RouteMeta } from "./components/RouteMeta";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
+const About = lazy(() => import("./pages/About"));
+const Consent = lazy(() => import("./pages/Consent"));
+const Guides = lazy(() => import("./pages/Guides"));
 const ImageInspectorPage = lazy(() => import("./pages/ImageInspector"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -22,6 +26,10 @@ function AppRoutes() {
       <Route path={"/csv-validator"} component={() => <Guide kind="validator" />} />
       <Route path={"/csv-duplicate-finder"} component={() => <Guide kind="duplicates" />} />
       <Route path={"/csv-pii-checker"} component={() => <Guide kind="pii" />} />
+      <Route path={"/image-metadata-guide"} component={() => <Guide kind="image_metadata" />} />
+      <Route path={"/guides"} component={Guides} />
+      <Route path={"/about"} component={About} />
+      <Route path={"/consent"} component={Consent} />
       <Route path={"/privacy"} component={Privacy} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
@@ -45,6 +53,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}>
+            <RouteMeta />
             <Suspense fallback={<div className="route-loading" role="status" aria-live="polite">Opening local inspection workspace…</div>}><AppRoutes /></Suspense>
           </WouterRouter>
         </TooltipProvider>

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: /sitemap.xml
+Sitemap: https://mohummadsultan0-sudo.github.io/private-preflight/sitemap.xml
