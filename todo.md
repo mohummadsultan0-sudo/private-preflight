@@ -228,4 +228,4 @@
 - [x] Add search-engine readiness artifacts and metadata: canonical URLs, sitemap coverage, robots directives, structured site metadata, and noindex protection for non-content routes where appropriate.
 - [x] Reserve clearly labelled, accessible advertising slots away from file selection, processing, download, error recovery, and other high-intent controls; keep them empty until approval.
 - [x] Verify desktop and mobile experience, route behaviour, semantic accessibility, privacy boundaries, TypeScript, 30 tests, production build, and GitHub Pages self-containment.
-- [ ] Publish the ready-to-apply release to Manus and GitHub Pages, then provide the external account, ownership verification, CMP, and ads.txt steps that require the site owner's credentials.
+- [x] Publish the ready-to-apply release to Manus and GitHub Pages, then provide the external account, ownership verification, CMP, and ads.txt steps that require the site owner's credentials. GitHub Pages initially returned transient 503/429 deployment errors; the third retry completed successfully and the published About page was verified.
