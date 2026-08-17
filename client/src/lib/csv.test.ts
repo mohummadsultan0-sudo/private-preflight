@@ -100,5 +100,6 @@ describe("analyzeText", () => {
     expect(sortCsvColumnIndexes(headers, visible, [1, 3], "alphabetical")).toEqual([2, 3, 1, 0]);
     expect(sortCsvColumnIndexes(headers, visible, [1, 3], "pii_first")).toEqual([3, 1, 2, 0]);
     expect(sortCsvColumnIndexes(headers, [3, 1], [1, 3], "source")).toEqual([1, 3]);
+    expect(sortCsvColumnIndexes(headers, visible, new Map([[1, 1], [3, 3]]), "pii_count")).toEqual([3, 1, 2, 0]);
   });
 });

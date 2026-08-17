@@ -8,7 +8,7 @@ export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export type Delimiter = "," | ";" | "\t" | "|";
 export type MatchMode = "normalized" | "exact";
 export type Severity = "info" | "warning" | "error";
-export type CsvColumnSort = "source" | "alphabetical" | "pii_first";
+export type CsvColumnSort = "source" | "alphabetical" | "pii_first" | "pii_count";
 
 export interface ParserIssue {
   code: "empty" | "binary" | "unclosed_quote" | "inconsistent_columns" | "single_column" | "decode_fallback";
@@ -229,13 +229,18 @@ export function findCsvColumnIndexes(headers: readonly string[], query: string):
     .map(({ index }) => index);
 }
 
-/** Orders already-matched column indexes locally; PII priority uses supplied signal indexes, never cell values. */
-export function sortCsvColumnIndexes(headers: readonly string[], indexes: readonly number[], piiColumnIndexes: readonly number[], sort: CsvColumnSort): number[] {
-  const piiSet = new Set(piiColumnIndexes);
+/** Orders already-matched column indexes locally; PII priority uses supplied signal counts, never cell values. */
+export function sortCsvColumnIndexes(headers: readonly string[], indexes: readonly number[], piiColumnIndexes: readonly number[] | ReadonlyMap<number, number>, sort: CsvColumnSort): number[] {
+  const piiCounts: ReadonlyMap<number, number> = typeof (piiColumnIndexes as ReadonlyMap<number, number>).get === "function"
+    ? piiColumnIndexes as ReadonlyMap<number, number>
+    : new Map<number, number>((piiColumnIndexes as readonly number[]).map((index) => [index, 1]));
   const labelFor = (index: number) => (headers[index]?.trim() || `Column ${index + 1}`).toLocaleLowerCase();
   return Array.from(new Set(indexes)).sort((left, right) => {
     if (sort === "source") return left - right;
-    if (sort === "pii_first" && piiSet.has(left) !== piiSet.has(right)) return piiSet.has(left) ? -1 : 1;
+    const leftPiiCount = piiCounts.get(left) ?? 0;
+    const rightPiiCount = piiCounts.get(right) ?? 0;
+    if (sort === "pii_count" && leftPiiCount !== rightPiiCount) return rightPiiCount - leftPiiCount;
+    if (sort === "pii_first" && Boolean(leftPiiCount) !== Boolean(rightPiiCount)) return leftPiiCount ? -1 : 1;
     return labelFor(left).localeCompare(labelFor(right)) || left - right;
   });
 }

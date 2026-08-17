@@ -209,3 +209,11 @@
 - [x] Implement a Ctrl/Cmd+F dialog shortcut that focuses the local column search and suppresses the browser search only while the dialog is open.
 - [x] Verify deterministic behavior, keyboard focus, empty-search recovery, A–Z and PII-first ordering, one-result bulk exclusion/restoration, 30 tests, TypeScript, and the production build. GitHub Pages deployment remains the final release step.
 - [x] Publish and validate the updated GitHub Pages release without a file upload or Manus-hosted dependency.
+
+## CSV search clearing, bulk-action impact, and PII-count sorting
+
+- [x] Define Esc behavior limited to a populated local column search, clear bulk-action impact copy, and a deterministic PII-signal-count ordering contract.
+- [x] Implement Esc to clear only the local column query, retaining all exclusion choices and leaving other dialog controls unchanged.
+- [x] Show the precise visible-column count that the next bulk action will exclude or restore before the user invokes it.
+- [x] Implement a PII-count-first sort mode that orders columns by descending number of local PII signal kinds and preserves source order for ties.
+- [x] Verify deterministic behavior, keyboard recovery, bulk impact copy, PII-count ordering, 30 tests, TypeScript, the production build, and a 375 px phone layout. GitHub Pages deployment remains the final release step.
