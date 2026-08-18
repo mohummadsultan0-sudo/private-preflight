@@ -259,3 +259,10 @@
 - [x] Submit `https://mohummadsultan0-sudo.github.io/sitemap.xml`; Google Search Console accepted the submission.
 - [ ] Recheck the sitemap after Google has processed the new property, then use URL Inspection to request the homepage and selected guide pages if Google still has not discovered them. The immediate status was `Couldn't fetch` with zero discovered pages even though the public sitemap returned correctly, and the new property overview says processing data may take a day or more.
 - [x] Record Search Console’s current status and distinguish successful submission from the later, non-guaranteed indexing decision.
+
+## Mobile CSV upload card overlap fix
+
+- [x] Identify the mobile breakpoint rules that allow the local-demo link to overlap the upload limit and local-record labels.
+- [x] Change the upload-card layout so its primary button, optional demo action, file-size notice, and local-only marker occupy separate, stable flow regions on narrow screens.
+- [x] Mirror the approved fix into the root GitHub Pages repository and the primary project source so both public URLs remain consistent.
+- [x] Verify the card at a 360–390px mobile viewport, run TypeScript, 30 deterministic tests, and GitHub Pages builds; the public root CSS was also checked after deployment for the new mobile rule.
