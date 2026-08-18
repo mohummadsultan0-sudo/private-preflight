@@ -229,3 +229,33 @@
 - [x] Reserve clearly labelled, accessible advertising slots away from file selection, processing, download, error recovery, and other high-intent controls; keep them empty until approval.
 - [x] Verify desktop and mobile experience, route behaviour, semantic accessibility, privacy boundaries, TypeScript, 30 tests, production build, and GitHub Pages self-containment.
 - [x] Publish the ready-to-apply release to Manus and GitHub Pages, then provide the external account, ownership verification, CMP, and ads.txt steps that require the site owner's credentials. GitHub Pages initially returned transient 503/429 deployment errors; the third retry completed successfully and the published About page was verified.
+
+
+## AdSense account connection follow-up
+
+- [ ] Check whether the user’s AdSense account is available in a logged-in browser session and verify the intended site/domain before making changes.
+- [ ] Complete only non-sensitive site configuration that does not require entering credentials, accepting terms, or making legal/privacy determinations on the user’s behalf.
+- [ ] Keep the publisher ID, payment/identity details, CMP account, consent decisions, and final ad activation under the user’s direct control.
+- [ ] Verify the connected site and activation state after the user completes any required takeover or confirmation step, then document remaining tasks.
+بدون تعبئة بيانات الحساب أو قبول الشروط نيابةً عن المستخدم.
+
+## Free root-domain route for AdSense
+
+- [x] Confirm the no-cost root GitHub Pages route as an alternative to buying a custom domain, including its ownership and ads.txt limitations.
+- [x] Create and publish a dedicated `mohummadsultan0-sudo.github.io` site after the user's explicit confirmation of the public repository and source-copy approach.
+- [x] Verify that the root Pages URL serves the intended application before entering it into AdSense; the root home and `/guides` route were publicly verified.
+- [x] Add and verify `https://mohummadsultan0-sudo.github.io/ads.txt` with the Google direct-seller record for publisher `pub-2346818897162854`. The AdSense console can take time to refresh its status.
+
+## AdSense review handoff
+
+- [x] Confirm that AdSense displays `mohummadsultan0-sudo.github.io` with the approval state `Requires review`; the user completed their own payment-profile information.
+- [ ] Wait for Google to complete the review or show a specific site issue; do not activate advertising code, Auto ads, or a CMP configuration until that account state is clear.
+- [ ] After approval, configure the user-chosen consent-management solution and advertising slots with the user’s direct approval, then verify that privacy and ads.txt status remain correct.
+
+## Google Search indexing
+
+- [x] Verify that the root GitHub Pages site exposes crawlable `robots.txt`, `sitemap.xml`, canonical URLs, and primary content routes. Public checks returned `200` for the home page, crawler rules, and `application/xml` sitemap, including a Googlebot user-agent check.
+- [x] Add `https://mohummadsultan0-sudo.github.io/` as a URL-prefix property in Google Search Console and complete HTML-tag ownership verification.
+- [x] Submit `https://mohummadsultan0-sudo.github.io/sitemap.xml`; Google Search Console accepted the submission.
+- [ ] Recheck the sitemap after Google has processed the new property, then use URL Inspection to request the homepage and selected guide pages if Google still has not discovered them. The immediate status was `Couldn't fetch` with zero discovered pages even though the public sitemap returned correctly, and the new property overview says processing data may take a day or more.
+- [x] Record Search Console’s current status and distinguish successful submission from the later, non-guaranteed indexing decision.
